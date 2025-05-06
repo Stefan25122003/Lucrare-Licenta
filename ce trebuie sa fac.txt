@@ -1,0 +1,143 @@
+
+# Sistem de Vot Anonim cu Criptare Homomorfică și Semnături Blind
+
+## Arhitectură Simplificată
+
+```
+   +----------------+              +----------------+               +------------------+
+   | Alegător       |  Token de    | Autoritate     |  Vot criptat  | Server de Vot    |
+   | (anonim)       +------------->| (semnează)     +-------------> | (stochează +     |
+   |                | blind        |                |               |  adună voturi)   |
+   +----------------+              +----------------+               +--------+---------+
+                                                                          |
+                                                         +-------------------------------+
+                                                         | Decriptare doar a rezultatului|
+                                                         +-------------------------------+
+```
+
+---
+
+## Pașii detaliați:
+
+### Pasul 1: Înregistrare și obținere token anonim (blind signature)
+
+1. Alegătorul creează un token de vot (ex: `random_id = "abc123"`)
+2. Tokenul este "blindat" – criptat astfel încât autoritatea **nu poate citi conținutul** (`blind(token)`)
+3. Autoritatea **semnează blind-ul** fără a ști ce semnează
+4. Alegătorul "deblind-ează" semnătura – obține un token semnat valid și anonim
+
+---
+
+### Pasul 2: Votul
+
+1. Alegătorul își criptează votul (ex: [1, 0, 0]) cu cheie publică (homomorfică)
+2. Trimite la server:
+    - votul criptat
+    - tokenul semnat
+3. Serverul verifică semnătura tokenului și că **nu a mai fost folosit**
+4. Votul este acceptat și stocat criptat
+
+---
+
+### Pasul 3: Agregare și decriptare finală
+
+1. Serverul adună criptat voturile (`Enc(A) + Enc(B) + ...`)
+2. La final, autoritatea deține cheia privată și decriptează doar **suma voturilor**, nu voturile individuale
+
+---
+
+## Exemplu Python – Simulare Simplificată
+
+```python
+import tenseal as ts
+import hashlib
+import random
+
+class VotingAuthority:
+    def __init__(self):
+        self.issued_tokens = set()
+        self.used_tokens = set()
+
+    def sign_blind_token(self, blind_token):
+        signature = hashlib.sha256(blind_token.encode()).hexdigest()
+        self.issued_tokens.add(signature)
+        return signature
+
+    def verify_token(self, token):
+        if token in self.used_tokens:
+            return False
+        if token not in self.issued_tokens:
+            return False
+        self.used_tokens.add(token)
+        return True
+
+def create_context():
+    context = ts.context(
+        ts.SCHEME_TYPE.BFV,
+        poly_modulus_degree=4096,
+        plain_modulus=1031
+    )
+    context.generate_galois_keys()
+    context.generate_relin_keys()
+    return context
+
+def encrypt_vote(context, one_hot_vote):
+    return ts.bfv_vector(context, one_hot_vote)
+
+def decrypt_result(context, enc_vector):
+    return enc_vector.decrypt()
+
+def simulate_voting():
+    authority = VotingAuthority()
+    context = create_context()
+
+    candidates = ["A", "B", "C"]
+    votes = [
+        [1,0,0],  # A
+        [0,1,0],  # B
+        [0,0,1],  # C
+        [1,0,0],  # A
+    ]
+
+    encrypted_votes = []
+    for vote in votes:
+        raw_token = str(random.randint(100000, 999999))
+        blind_token = "blind_" + raw_token
+        signed_token = authority.sign_blind_token(blind_token)
+
+        if authority.verify_token(signed_token):
+            encrypted_vote = encrypt_vote(context, vote)
+            encrypted_votes.append(encrypted_vote)
+        else:
+            print("Token invalid sau deja folosit!")
+
+    encrypted_result = encrypted_votes[0]
+    for enc_vote in encrypted_votes[1:]:
+        encrypted_result += enc_vote
+
+    results = decrypt_result(context, encrypted_result)
+    for i, count in enumerate(results):
+        print(f"Candidat {candidates[i]} a primit {count} voturi.")
+
+simulate_voting()
+```
+
+---
+
+## Ce oferă acest sistem:
+
+| Proprietate               | Asigurată | Cum?                                      |
+|---------------------------|-----------|--------------------------------------------|
+| Anonimitatea votului      | ✅        | Token semnat blind + lipsă identitate      |
+| Confidențialitatea votului| ✅        | Criptare homomorfică                       |
+| Unicitate vot             | ✅        | Verificare tokenuri unice                  |
+| Integritatea rezultatelor | ✅        | Voturi criptate, adunare sigură            |
+
+---
+
+## Se poate adăuga:
+
+- Semnătură blind reală (RSA Blind)
+- ZK-Proofs pentru verificarea validității
+- Blockchain pentru audit
+- Threshold decryption pentru descentralizare
