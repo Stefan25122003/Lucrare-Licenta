@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 
 const authRoutes = require('./routes/auth');
 const pollRoutes = require('./routes/polls');
+const securePollRoutes = require('./routes/securePolls'); // Add this line
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 // Adaugă rutele
 app.use('/api/auth', authRoutes);
 app.use('/api/polls', pollRoutes);
+app.use('/api/secure-polls', securePollRoutes); // Add this line
 
 app.listen(PORT, () => {
   console.log(`Serverul rulează pe portul ${PORT}`);
