@@ -160,4 +160,21 @@ router.post('/:pollId/close', async (req, res) => {
   }
 });
 
+// Get a single secure poll by ID
+router.get('/:pollId', async (req, res) => {
+  try {
+    const { pollId } = req.params;
+    const poll = await SecurePoll.findById(pollId);
+    
+    if (!poll) {
+      return res.status(404).json({ message: 'Poll not found' });
+    }
+    
+    res.json(poll);
+  } catch (error) {
+    console.error('Error fetching poll:', error);
+    res.status(500).json({ message: 'Error fetching poll', error });
+  }
+});
+
 module.exports = router;

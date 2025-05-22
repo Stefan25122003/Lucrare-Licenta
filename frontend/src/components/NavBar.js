@@ -27,9 +27,10 @@ const NavBar = () => {
               <Link to="/secure-polls" className="hover:text-gray-300">
                 Sondaje Anonime Securizate
               </Link>
-              <span className="text-gray-400">
+              {/* Transformăm username-ul într-un link către pagina de profil */}
+              <Link to="/profile" className="text-gray-400 hover:text-white">
                 {user.username}
-              </span>
+              </Link>
               <button 
                 onClick={handleLogout}
                 className="bg-red-600 px-3 py-1 rounded hover:bg-red-700"

@@ -32,9 +32,17 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem('token');
   };
+  
+  // Metodă nouă pentru actualizarea datelor utilizatorului
+  const updateUserData = (updatedData) => {
+    setUser(prevUser => ({
+      ...prevUser,
+      ...updatedData
+    }));
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register }}>
+    <AuthContext.Provider value={{ user, login, logout, register, updateUserData }}>
       {children}
     </AuthContext.Provider>
   );
