@@ -6,13 +6,14 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Polls from './components/Polls';
 import SecurePolls from './components/SecurePolls';
-import SecurePollDetail from './components/SecurePollDetail';
+import RealSecurePollDetail from './components/RealSecurePollDetail'; // ✅ CORECTARE: Folosește exact numele fișierului cu case-ul corect
 import Profile from './components/Profile';
 import NavBar from './components/NavBar';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import PollStatistics from './components/PollStatistics';
 import PollDetail from './components/PollDetail';
-import UserProfile from './components/UserProfile'; // ✅ Adaugă importul
+import UserProfile from './components/UserProfile';
+import VotingProcess from './components/VotingProcess'; // ✅ FIX: Importă componenta VotingProcess
 
 // Componentă pentru protejarea rutelor
 const ProtectedRoute = ({ children }) => {
@@ -113,7 +114,7 @@ function App() {
                 } 
               />
               
-              {/* Sondaje securizate */}
+              {/* ✅ SONDAJE SECURIZATE CU REAL CRYPTO */}
               <Route 
                 path="/secure-polls" 
                 element={
@@ -126,7 +127,7 @@ function App() {
                 path="/secure-polls/:pollId" 
                 element={
                   <ProtectedRoute>
-                    <SecurePollDetail />
+                    <RealSecurePollDetail /> {/* ✅ CORECTARE: Numele corect al componentei */}
                   </ProtectedRoute>
                 } 
               />
@@ -149,6 +150,12 @@ function App() {
                     <UserProfile />
                   </ProtectedRoute>
                 } 
+              />
+              
+              {/* Ruta pentru procesul de votare - COMPONENTĂ NOUĂ */}
+              <Route 
+                path="/voting-process" 
+                element={<VotingProcess />} 
               />
               
               {/* 404 */}

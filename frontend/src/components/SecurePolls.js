@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import cryptoService from '../services/cryptoService';
+import realClientCryptoService from '../services/RealClientCryptoService';;
 
 const SecurePolls = () => {
   const [polls, setPolls] = useState([]);
@@ -165,7 +165,7 @@ const SecurePolls = () => {
     try {
       setMessage(`📁 Pregătire download cryptotexts (${format.toUpperCase()})...`);
       
-      await cryptoService.downloadCryptotexts(pollId, format);
+      await realClientCryptoService.downloadCryptotexts(pollId, format);
       
       setMessage(`✅ Cryptotexts descărcate cu succes în format ${format.toUpperCase()}!`);
       
@@ -185,8 +185,8 @@ const SecurePolls = () => {
   const analyzeCryptotexts = async (pollId) => {
     try {
       setMessage('🔬 Analizare cryptotexts în curs...');
-      
-      const analysis = await cryptoService.analyzeCryptotexts(pollId);
+
+      const analysis = await realClientCryptoService.analyzeCryptotexts(pollId);
       setAnalysisResults(analysis);
       
       setMessage('✅ Analiza cryptotextelor completă! Verifică rezultatele mai jos.');

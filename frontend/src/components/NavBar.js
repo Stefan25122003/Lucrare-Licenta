@@ -74,6 +74,11 @@ const Navbar = () => {
                 Sondaje Securizate
               </Link>
             )}
+
+            {/* Nou: Link către pagina Proces de votare */}
+            <Link to="/voting-process" className={navLinkClass('/voting-process')}>
+              Proces de votare
+            </Link>
           </div>
 
           {/* Desktop User Menu */}
@@ -186,6 +191,15 @@ const Navbar = () => {
                 Sondaje Securizate
               </Link>
             )}
+
+            {/* Nou: Link către pagina Proces de votare în meniul mobil */}
+            <Link 
+              to="/voting-process" 
+              className={mobileNavLinkClass('/voting-process')}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Proces de votare
+            </Link>
           </div>
           
           <div className="pt-4 pb-3 border-t border-gray-200">
