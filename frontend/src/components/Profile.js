@@ -1,7 +1,37 @@
-// Profile.js - FIXED cu URL-uri corecte
+// Profile.js - UPDATED cu Lucide React icons
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { 
+  User, 
+  Mail, 
+  Calendar, 
+  Shield, 
+  Edit3, 
+  Save, 
+  X,
+  Key,
+  Lock,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  AlertCircle,
+  Settings,
+  BarChart3,
+  Clock,
+  Award,
+  UserCircle,
+  Cog,
+  ShieldCheck,
+  Phone,
+  MapPin,
+  FileText,
+  Crown,
+  TrendingUp,
+  Users,
+  Calendar as CalendarIcon,
+  Info
+} from 'lucide-react';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -27,6 +57,11 @@ const Profile = () => {
     current_password: '',
     new_password: '',
     confirm_password: ''
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
   });
 
   useEffect(() => {
@@ -185,7 +220,13 @@ const Profile = () => {
     }
   };
 
-  // ✅ FUNCȚII HELPER PENTRU A EVITA ERORILE DE toUpperCase
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
   const getDisplayName = () => {
     if (profile.first_name && profile.last_name) {
       return `${profile.first_name} ${profile.last_name}`;
@@ -206,351 +247,466 @@ const Profile = () => {
       return profile.username[0].toUpperCase();
     }
     
-    return 'U'; // Fallback
-  };
-
-  const safeToUpperCase = (str) => {
-    return str && typeof str === 'string' && str.length > 0 ? str[0].toUpperCase() : 'U';
+    return 'U';
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Se încarcă profilul...</p>
+          <p className="text-gray-600 flex items-center space-x-2">
+            <Clock className="w-4 h-4" />
+            <span>Se încarcă profilul...</span>
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">👤 Profilul Meu</h1>
-
-      {message && (
-        <div className={`mb-4 p-3 rounded ${
-          message.includes('✅') ? 'bg-green-100 text-green-800' : 
-          message.includes('ℹ️') ? 'bg-blue-100 text-blue-800' :
-          'bg-red-100 text-red-800'
-        }`}>
-          {message}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Informații personale */}
-        <div className="lg:col-span-2">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold"> Informații Personale</h2>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Header Section */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <div className="flex items-center space-x-6">
+            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+              <UserCircle className="w-14 h-14 text-white" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center space-x-3">
+                <span>{getDisplayName()}</span>
+                {user?.isAdmin && (
+                  <span className="flex items-center space-x-1 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                    <Crown className="w-4 h-4" />
+                    <span>Administrator</span>
+                  </span>
+                )}
+              </h1>
+              <p className="text-gray-600 flex items-center space-x-2 mt-2">
+                <Mail className="w-4 h-4" />
+                <span>{profile.email}</span>
+              </p>
+              <p className="text-gray-500 flex items-center space-x-2 text-sm mt-1">
+                <CalendarIcon className="w-4 h-4" />
+                <span>Membru din {stats?.member_since ? new Date(stats.member_since).toLocaleDateString('ro-RO') : 'N/A'}</span>
+              </p>
+            </div>
+            <div className="flex space-x-3">
               {!editing ? (
                 <button
                   onClick={() => setEditing(true)}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                  className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all duration-200 shadow-md hover:shadow-lg"
                 >
-                  ✏️ Editează
+                  <Edit3 className="w-4 h-4" />
+                  <span>Editează Profil</span>
                 </button>
               ) : (
-                <div className="space-x-2">
+                <div className="flex space-x-2">
                   <button
                     onClick={handleSaveProfile}
                     disabled={saving}
-                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:bg-green-300"
+                    className="flex items-center space-x-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-all duration-200 disabled:opacity-50 shadow-md"
                   >
-                    {saving ? 'Se salvează...' : '💾 Salvează'}
+                    <Save className="w-4 h-4" />
+                    <span>{saving ? 'Se salvează...' : 'Salvează'}</span>
                   </button>
                   <button
                     onClick={handleCancelEdit}
-                    disabled={saving}
-                    className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                    className="flex items-center space-x-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all duration-200 shadow-md"
                   >
-                    ❌ Anulează
+                    <X className="w-4 h-4" />
+                    <span>Anulează</span>
                   </button>
                 </div>
               )}
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Username (readonly) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nume utilizator
-                </label>
-                <input
-                  type="text"
-                  value={profile.username || ''}
-                  disabled
-                  className="w-full p-2 border border-gray-300 rounded bg-gray-100 text-gray-600"
-                />
-              </div>
-
-              {/* Email (readonly) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={profile.email || ''}
-                  disabled
-                  className="w-full p-2 border border-gray-300 rounded bg-gray-100 text-gray-600"
-                />
-              </div>
-
-              {/* Prenume */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Prenume
-                </label>
-                <input
-                  type="text"
-                  name="first_name"
-                  value={profile.first_name || ''}
-                  onChange={handleInputChange}
-                  disabled={!editing}
-                  placeholder="Introdu prenumele"
-                  className={`w-full p-2 border border-gray-300 rounded ${
-                    editing ? 'bg-white' : 'bg-gray-50'
-                  }`}
-                />
-              </div>
-
-              {/* Nume */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nume
-                </label>
-                <input
-                  type="text"
-                  name="last_name"
-                  value={profile.last_name || ''}
-                  onChange={handleInputChange}
-                  disabled={!editing}
-                  placeholder="Introdu numele"
-                  className={`w-full p-2 border border-gray-300 rounded ${
-                    editing ? 'bg-white' : 'bg-gray-50'
-                  }`}
-                />
-              </div>
-
-              {/* Oraș */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Oraș
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={profile.city || ''}
-                  onChange={handleInputChange}
-                  disabled={!editing}
-                  placeholder="Introdu orașul"
-                  className={`w-full p-2 border border-gray-300 rounded ${
-                    editing ? 'bg-white' : 'bg-gray-50'
-                  }`}
-                />
-              </div>
-
-              {/* Vârsta */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Vârsta
-                </label>
-                <input
-                  type="number"
-                  name="age"
-                  value={profile.age || ''}
-                  onChange={handleInputChange}
-                  disabled={!editing}
-                  placeholder="Introdu vârsta"
-                  min="13"
-                  max="120"
-                  className={`w-full p-2 border border-gray-300 rounded ${
-                    editing ? 'bg-white' : 'bg-gray-50'
-                  }`}
-                />
-              </div>
-
-              {/* Telefon */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Telefon
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={profile.phone || ''}
-                  onChange={handleInputChange}
-                  disabled={!editing}
-                  placeholder="Introdu numărul de telefon"
-                  className={`w-full p-2 border border-gray-300 rounded ${
-                    editing ? 'bg-white' : 'bg-gray-50'
-                  }`}
-                />
-              </div>
-
-              {/* Biografie */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Biografie
-                </label>
-                <textarea
-                  name="bio"
-                  value={profile.bio || ''}
-                  onChange={handleInputChange}
-                  disabled={!editing}
-                  placeholder="Scrie o scurtă descriere despre tine..."
-                  rows="3"
-                  maxLength="500"
-                  className={`w-full p-2 border border-gray-300 rounded ${
-                    editing ? 'bg-white' : 'bg-gray-50'
-                  }`}
-                />
-                {editing && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    {(profile.bio || '').length}/500 caractere
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Schimbare parolă */}
-          <div className="bg-white p-6 rounded-lg shadow-md mt-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Security</h2>
-              <button
-                onClick={() => setShowPasswordForm(!showPasswordForm)}
-                className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
-              >
-                {showPasswordForm ? 'Anulează' : 'Schimbă Parola'}
-              </button>
-            </div>
-
-            {showPasswordForm && (
-              <form onSubmit={handleChangePassword} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Parola curentă
-                  </label>
-                  <input
-                    type="password"
-                    value={passwordData.current_password}
-                    onChange={(e) => setPasswordData(prev => ({
-                      ...prev,
-                      current_password: e.target.value
-                    }))}
-                    required
-                    className="w-full p-2 border border-gray-300 rounded"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Parola nouă
-                  </label>
-                  <input
-                    type="password"
-                    value={passwordData.new_password}
-                    onChange={(e) => setPasswordData(prev => ({
-                      ...prev,
-                      new_password: e.target.value
-                    }))}
-                    required
-                    minLength="6"
-                    className="w-full p-2 border border-gray-300 rounded"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirmă parola nouă
-                  </label>
-                  <input
-                    type="password"
-                    value={passwordData.confirm_password}
-                    onChange={(e) => setPasswordData(prev => ({
-                      ...prev,
-                      confirm_password: e.target.value
-                    }))}
-                    required
-                    className="w-full p-2 border border-gray-300 rounded"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600 disabled:bg-red-300"
-                >
-                  {saving ? 'Se schimbă...' : 'Schimbă Parola'}
-                </button>
-              </form>
-            )}
           </div>
         </div>
 
-        {/* Statistici */}
-        <div className="space-y-6">
-          {/* Avatar */}
-          <div className="bg-white p-6 rounded-lg shadow-md text-center">
-            <div className="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center text-white text-3xl font-bold mx-auto mb-4">
-              {/* ✅ FOLOSIM FUNCȚIA SAFE getInitials() */}
-              {getInitials()}
-            </div>
-            <h3 className="text-lg font-semibold">
-              {/* ✅ FOLOSIM FUNCȚIA SAFE getDisplayName() */}
-              {getDisplayName()}
-            </h3>
-            <p className="text-gray-600">@{profile.username || 'utilizator'}</p>
-            {user?.isAdmin && (
-              <span className="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full mt-2">
-                👑 Administrator
-              </span>
+        {/* Message Alert */}
+        {message && (
+          <div className={`mb-6 p-4 rounded-lg flex items-center space-x-3 ${
+            message.includes('✅') ? 'bg-green-100 text-green-800 border border-green-200' : 
+            message.includes('ℹ️') ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+            'bg-red-100 text-red-800 border border-red-200'
+          }`}>
+            {message.includes('✅') ? (
+              <CheckCircle className="w-5 h-5" />
+            ) : message.includes('ℹ️') ? (
+              <Info className="w-5 h-5" />
+            ) : (
+              <AlertCircle className="w-5 h-5" />
             )}
+            <span>{message}</span>
           </div>
+        )}
 
-          {/* Statistici */}
-          {stats && (
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-lg font-bold mb-4">📊 Statistici</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Sondaje create:</span>
-                  <span className="font-semibold">{stats.polls_created || 0}</span>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Personal Information */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
+                <User className="w-6 h-6 text-blue-500" />
+                <span>Informații Personale</span>
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Username (readonly) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span>Nume utilizator</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={profile.username || ''}
+                    disabled
+                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Sondaje securizate:</span>
-                  <span className="font-semibold">{stats.secure_polls_created || 0}</span>
+
+                {/* Email (readonly) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Mail className="w-4 h-4" />
+                    <span>Email</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={profile.email || ''}
+                    disabled
+                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total sondaje:</span>
-                  <span className="font-semibold">{stats.total_polls_created || 0}</span>
+
+                {/* Prenume */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span>Prenume</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="first_name"
+                    value={profile.first_name || ''}
+                    onChange={handleInputChange}
+                    disabled={!editing}
+                    placeholder="Introdu prenumele"
+                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      editing ? 'bg-white hover:border-blue-400' : 'bg-gray-50'
+                    }`}
+                  />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Membru din:</span>
-                  <span className="font-semibold">
-                    {stats.member_since ? new Date(stats.member_since).toLocaleDateString('ro-RO') : 'N/A'}
-                  </span>
+
+                {/* Nume */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span>Nume</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="last_name"
+                    value={profile.last_name || ''}
+                    onChange={handleInputChange}
+                    disabled={!editing}
+                    placeholder="Introdu numele"
+                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      editing ? 'bg-white hover:border-blue-400' : 'bg-gray-50'
+                    }`}
+                  />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Zile active:</span>
-                  <span className="font-semibold">{stats.days_since_registration || 0}</span>
+
+                {/* Oraș */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <MapPin className="w-4 h-4" />
+                    <span>Oraș</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={profile.city || ''}
+                    onChange={handleInputChange}
+                    disabled={!editing}
+                    placeholder="Introdu orașul"
+                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      editing ? 'bg-white hover:border-blue-400' : 'bg-gray-50'
+                    }`}
+                  />
+                </div>
+
+                {/* Vârsta */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Calendar className="w-4 h-4" />
+                    <span>Vârsta</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="age"
+                    value={profile.age || ''}
+                    onChange={handleInputChange}
+                    disabled={!editing}
+                    placeholder="Introdu vârsta"
+                    min="13"
+                    max="120"
+                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      editing ? 'bg-white hover:border-blue-400' : 'bg-gray-50'
+                    }`}
+                  />
+                </div>
+
+                {/* Telefon */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Phone className="w-4 h-4" />
+                    <span>Telefon</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={profile.phone || ''}
+                    onChange={handleInputChange}
+                    disabled={!editing}
+                    placeholder="Introdu numărul de telefon"
+                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      editing ? 'bg-white hover:border-blue-400' : 'bg-gray-50'
+                    }`}
+                  />
+                </div>
+
+                {/* Biografie */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <FileText className="w-4 h-4" />
+                    <span>Biografie</span>
+                  </label>
+                  <textarea
+                    name="bio"
+                    value={profile.bio || ''}
+                    onChange={handleInputChange}
+                    disabled={!editing}
+                    placeholder="Scrie o scurtă descriere despre tine..."
+                    rows="4"
+                    maxLength="500"
+                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-200 ${
+                      editing ? 'bg-white hover:border-blue-400' : 'bg-gray-50'
+                    }`}
+                  />
+                  {editing && (
+                    <p className="text-sm text-gray-500 mt-2 flex items-center space-x-1">
+                      <FileText className="w-3 h-3" />
+                      <span>{(profile.bio || '').length}/500 caractere</span>
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
-          )}
 
-          {/* Informații despre cont */}
-          <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
-            <h4 className="font-semibold text-blue-800 mb-2">ℹ️ Informații Cont</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li>• Username-ul și email-ul nu pot fi modificate</li>
-              <li>• Toate informațiile sunt opționale</li>
-              <li>• Biografia poate avea maxim 500 caractere</li>
-              <li>• Vârsta trebuie să fie între 13-120 ani</li>
-            </ul>
+            {/* Security Section */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold flex items-center space-x-2">
+                  <Shield className="w-6 h-6 text-green-500" />
+                  <span>Securitate</span>
+                </h2>
+                <button
+                  onClick={() => setShowPasswordForm(!showPasswordForm)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 shadow-md ${
+                    showPasswordForm 
+                      ? 'bg-gray-500 text-white hover:bg-gray-600' 
+                      : 'bg-yellow-500 text-white hover:bg-yellow-600'
+                  }`}
+                >
+                  <Key className="w-4 h-4" />
+                  <span>{showPasswordForm ? 'Anulează' : 'Schimbă Parola'}</span>
+                </button>
+              </div>
+
+              {showPasswordForm && (
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                      <Lock className="w-4 h-4" />
+                      <span>Parola curentă</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPasswords.current ? "text" : "password"}
+                        value={passwordData.current_password}
+                        onChange={(e) => setPasswordData(prev => ({
+                          ...prev,
+                          current_password: e.target.value
+                        }))}
+                        required
+                        className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('current')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                      <Key className="w-4 h-4" />
+                      <span>Parola nouă</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPasswords.new ? "text" : "password"}
+                        value={passwordData.new_password}
+                        onChange={(e) => setPasswordData(prev => ({
+                          ...prev,
+                          new_password: e.target.value
+                        }))}
+                        required
+                        minLength="6"
+                        className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('new')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Confirmă parola nouă</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPasswords.confirm ? "text" : "password"}
+                        value={passwordData.confirm_password}
+                        onChange={(e) => setPasswordData(prev => ({
+                          ...prev,
+                          confirm_password: e.target.value
+                        }))}
+                        required
+                        className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('confirm')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex items-center space-x-2 bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-all duration-200 disabled:opacity-50 shadow-md"
+                  >
+                    <Key className="w-4 h-4" />
+                    <span>{saving ? 'Se schimbă...' : 'Schimbă Parola'}</span>
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Avatar Card */}
+            <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+              <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-4xl font-bold mx-auto mb-4 shadow-lg">
+                {getInitials()}
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {getDisplayName()}
+              </h3>
+              <p className="text-gray-600 flex items-center justify-center space-x-2">
+                <User className="w-4 h-4" />
+                <span>@{profile.username || 'utilizator'}</span>
+              </p>
+              {user?.isAdmin && (
+                <span className="inline-flex items-center space-x-1 bg-purple-100 text-purple-800 text-sm px-3 py-1 rounded-full mt-3">
+                  <Crown className="w-4 h-4" />
+                  <span>Administrator</span>
+                </span>
+              )}
+            </div>
+
+            {/* Statistics */}
+            {stats && (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-bold mb-4 flex items-center space-x-2">
+                  <BarChart3 className="w-5 h-5 text-purple-500" />
+                  <span>Statistici</span>
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <span className="flex items-center space-x-2 text-blue-700">
+                      <TrendingUp className="w-4 h-4" />
+                      <span>Sondaje create</span>
+                    </span>
+                    <span className="font-bold text-blue-900">{stats.polls_created || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <span className="flex items-center space-x-2 text-green-700">
+                      <Shield className="w-4 h-4" />
+                      <span>Sondaje securizate</span>
+                    </span>
+                    <span className="font-bold text-green-900">{stats.secure_polls_created || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                    <span className="flex items-center space-x-2 text-purple-700">
+                      <Users className="w-4 h-4" />
+                      <span>Total sondaje</span>
+                    </span>
+                    <span className="font-bold text-purple-900">{stats.total_polls_created || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="flex items-center space-x-2 text-gray-700">
+                      <Clock className="w-4 h-4" />
+                      <span>Zile active</span>
+                    </span>
+                    <span className="font-bold text-gray-900">{stats.days_since_registration || 0}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Info Card */}
+            <div className="bg-blue-50 rounded-xl p-6 border-l-4 border-blue-500">
+              <h4 className="font-bold text-blue-800 mb-3 flex items-center space-x-2">
+                <Info className="w-5 h-5" />
+                <span>Informații Cont</span>
+              </h4>
+              <ul className="text-sm text-blue-700 space-y-2">
+                <li className="flex items-start space-x-2">
+                  <CheckCircle className="w-4 h-4 mt-0.5 text-blue-600" />
+                  <span>Username-ul și email-ul nu pot fi modificate</span>
+                </li>
+                <li className="flex items-start space-x-2">
+                  <CheckCircle className="w-4 h-4 mt-0.5 text-blue-600" />
+                  <span>Toate informațiile sunt opționale</span>
+                </li>
+                <li className="flex items-start space-x-2">
+                  <CheckCircle className="w-4 h-4 mt-0.5 text-blue-600" />
+                  <span>Biografia poate avea maxim 500 caractere</span>
+                </li>
+                <li className="flex items-start space-x-2">
+                  <CheckCircle className="w-4 h-4 mt-0.5 text-blue-600" />
+                  <span>Vârsta trebuie să fie între 13-120 ani</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

@@ -954,3 +954,60 @@ async def download_cryptotexts_file(
     except Exception as e:
         print(f"❌ Error downloading cryptotexts file: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+from typing import List, Dict, Any
+
+@router.post("/{poll_id}/local-tally", 
+             response_model=Dict[str, int], 
+             summary="Tally criptotexturi încărcate")
+async def local_tally(
+    poll_id: str,
+    cryptotexts: List[Dict[str, Any]],
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Primește un JSON cu cryptotexturi (același format ca la export) 
+    și returnează un dict {option_index: vote_count}.
+    """
+    # opţional: verificări de permisiune/admin
+    results = crypto_system.tally_votes(cryptotexts)
+    return { str(i): cnt for i, cnt in enumerate(results) }
+
+@router.get("/{poll_id}/vote-status")
+async def get_vote_status(poll_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Verifică dacă utilizatorul a votat deja la acest sondaj securizat
+    """
+    try:
+        if not ObjectId.is_valid(poll_id):
+            raise HTTPException(status_code=400, detail="Invalid poll ID format")
+        
+        db = await get_database()
+        
+        # Verifică dacă sondajul există
+        poll = await db.secure_polls.find_one({"_id": ObjectId(poll_id)})
+        if not poll:
+            raise HTTPException(status_code=404, detail="Secure poll not found")
+        
+        # Caută votul în secure_votes collection
+        existing_vote = await db.secure_votes.find_one({
+            "poll_id": poll_id,
+            "user_id": str(current_user["_id"])
+        })
+        
+        has_voted = existing_vote is not None
+        
+        print(f"🔍 Vote status check: User {current_user.get('username')} on poll {poll_id}: {'HAS VOTED' if has_voted else 'NOT VOTED'}")
+        
+        return {
+            "has_voted": has_voted,
+            "poll_id": poll_id,
+            "user_id": str(current_user["_id"]),
+            "vote_timestamp": existing_vote.get("timestamp").isoformat() if existing_vote and existing_vote.get("timestamp") else None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error checking vote status: {e}")
+        raise HTTPException(status_code=500, detail=f"Error checking vote status: {str(e)}")

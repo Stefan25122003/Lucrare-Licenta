@@ -2,6 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { 
+  User, 
+  Calendar, 
+  Vote, 
+  CheckCircle, 
+  Lock, 
+  BarChart3, 
+  ArrowLeft, 
+  Trash2, 
+  Clock, 
+  AlertCircle,
+  Loader2
+} from 'lucide-react';
 
 const PollDetail = () => {
   const { pollId } = useParams();
@@ -31,7 +44,7 @@ const PollDetail = () => {
       
     } catch (error) {
       console.error('Error fetching poll:', error);
-      setMessage('❌ Eroare la încărcarea sondajului');
+      setMessage('Eroare la încărcarea sondajului');
     } finally {
       setLoading(false);
     }
@@ -59,7 +72,7 @@ const PollDetail = () => {
 
   const handleVote = async (optionIndex) => {
     if (hasVoted) {
-      setMessage('❌ Ai votat deja în acest sondaj');
+      setMessage('Ai votat deja în acest sondaj');
       return;
     }
 
@@ -73,7 +86,7 @@ const PollDetail = () => {
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       
-      setMessage('✅ ' + response.data.message);
+      setMessage(response.data.message);
       setHasVoted(true);
       
       // ✅ REMOVED: Nu mai folosim localStorage pentru a stoca voturile
@@ -88,7 +101,7 @@ const PollDetail = () => {
       
     } catch (error) {
       const errorMessage = error.response?.data?.detail || 'Eroare la votare';
-      setMessage('❌ ' + errorMessage);
+      setMessage(errorMessage);
       
       // Dacă eroarea spune că utilizatorul a votat deja, marchează ca și votat
       if (errorMessage.includes('already voted') || errorMessage.includes('votat deja')) {
@@ -109,11 +122,11 @@ const PollDetail = () => {
         {},
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
-      setMessage('✅ Sondajul a fost închis');
+      setMessage('Sondajul a fost închis');
       fetchPoll();
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
-      setMessage('❌ ' + (error.response?.data?.detail || 'Eroare la închiderea sondajului'));
+      setMessage(error.response?.data?.detail || 'Eroare la închiderea sondajului');
     }
   };
 
@@ -125,10 +138,10 @@ const PollDetail = () => {
       await axios.delete(`http://localhost:5000/polls/${pollId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      setMessage('✅ Sondajul a fost șters');
+      setMessage('Sondajul a fost șters');
       setTimeout(() => navigate('/polls'), 2000);
     } catch (error) {
-      setMessage('❌ ' + (error.response?.data?.detail || 'Eroare la ștergerea sondajului'));
+      setMessage(error.response?.data?.detail || 'Eroare la ștergerea sondajului');
     }
   };
 
@@ -136,7 +149,7 @@ const PollDetail = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
           <p className="text-gray-600">Se încarcă sondajul...</p>
         </div>
       </div>
@@ -147,8 +160,10 @@ const PollDetail = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-700 mb-4">Sondajul nu a fost găsit</h2>
-          <Link to="/polls" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+          <Link to="/polls" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2 mx-auto w-fit">
+            <ArrowLeft className="w-4 h-4" />
             Înapoi la Sondaje
           </Link>
         </div>
@@ -163,13 +178,32 @@ const PollDetail = () => {
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">{poll.title}</h1>
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-            <span>👤 Creat de: <strong>{poll.creator_username}</strong></span>
-            <span>📅 {new Date(poll.created_at).toLocaleDateString('ro-RO')}</span>
-            <span>🗳️ {poll.total_votes} voturi</span>
-            <span className={`px-2 py-1 rounded text-xs font-medium ${
+            <span className="flex items-center gap-1">
+              <User className="w-4 h-4" />
+              Creat de: <strong>{poll.creator_username}</strong>
+            </span>
+            <span className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              {new Date(poll.created_at).toLocaleDateString('ro-RO')}
+            </span>
+            <span className="flex items-center gap-1">
+              <Vote className="w-4 h-4" />
+              {poll.total_votes} voturi
+            </span>
+            <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${
               poll.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
             }`}>
-              {poll.is_active ? '🟢 Activ' : '🔴 Închis'}
+              {poll.is_active ? (
+                <>
+                  <CheckCircle className="w-3 h-3" />
+                  Activ
+                </>
+              ) : (
+                <>
+                  <Lock className="w-3 h-3" />
+                  Închis
+                </>
+              )}
             </span>
           </div>
         </div>
@@ -178,7 +212,7 @@ const PollDetail = () => {
         {hasVoted && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-center text-green-700">
-              <span className="text-lg mr-2">✅</span>
+              <CheckCircle className="w-5 h-5 mr-2" />
               <span className="font-medium">Ai votat deja la acest sondaj</span>
             </div>
           </div>
@@ -186,9 +220,14 @@ const PollDetail = () => {
 
         {/* Message - doar pentru acțiuni specifice */}
         {message && (
-          <div className={`p-4 rounded-lg mb-6 ${
-            message.includes('❌') ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-800'
+          <div className={`p-4 rounded-lg mb-6 flex items-center gap-2 ${
+            message.includes('Eroare') || message.includes('eșuat') ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-800'
           }`}>
+            {message.includes('Eroare') || message.includes('eșuat') ? (
+              <AlertCircle className="w-5 h-5" />
+            ) : (
+              <CheckCircle className="w-5 h-5" />
+            )}
             {message}
           </div>
         )}
@@ -226,7 +265,17 @@ const PollDetail = () => {
                       disabled={voting}
                       className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-1"
                     >
-                      {voting ? '⏳ Votez...' : '🗳️ Votează'}
+                      {voting ? (
+                        <>
+                          <Clock className="w-3 h-3 animate-spin" />
+                          Votez...
+                        </>
+                      ) : (
+                        <>
+                          <Vote className="w-3 h-3" />
+                          Votează
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
@@ -242,7 +291,8 @@ const PollDetail = () => {
             to={`/polls/${poll.id}/statistics`}
             className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors inline-flex items-center gap-2"
           >
-            📊 <span>Vezi Statistici</span>
+            <BarChart3 className="w-4 h-4" />
+            <span>Vezi Statistici</span>
           </Link>
           
           {/* Buton pentru închidere sondaj - doar pentru creator sau admin */}
@@ -251,7 +301,8 @@ const PollDetail = () => {
               onClick={handleClosePoll}
               className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors inline-flex items-center gap-2"
             >
-              🔒 <span>Închide Sondaj</span>
+              <Lock className="w-4 h-4" />
+              <span>Închide Sondaj</span>
             </button>
           )}
           
@@ -261,7 +312,8 @@ const PollDetail = () => {
               onClick={handleDeletePoll}
               className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors inline-flex items-center gap-2"
             >
-              🗑️ <span>Șterge Sondaj</span>
+              <Trash2 className="w-4 h-4" />
+              <span>Șterge Sondaj</span>
             </button>
           )}
           
@@ -270,7 +322,8 @@ const PollDetail = () => {
             to="/polls"
             className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors inline-flex items-center gap-2"
           >
-            ⬅️ <span>Înapoi</span>
+            <ArrowLeft className="w-4 h-4" />
+            <span>Înapoi</span>
           </Link>
         </div>
       </div>

@@ -1,6 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { 
+  BarChart3, 
+  Shield, 
+  Smartphone, 
+  Vote,
+  Key,
+  User,
+  ArrowRight,
+  UserPlus,
+  LogIn
+} from 'lucide-react';
 
 const Home = () => {
   const { user } = useAuth();
@@ -17,7 +28,6 @@ const Home = () => {
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
             Platforma modernă pentru crearea și gestionarea sondajelor online. 
-            
           </p>
           
           {user ? (
@@ -28,21 +38,23 @@ const Home = () => {
               <div className="flex flex-wrap justify-center gap-4">
                 <Link
                   to="/polls"
-                  className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
+                  className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg flex items-center gap-2"
                 >
+                  <Vote className="w-5 h-5" />
                   Vezi Sondajele
                 </Link>
-                {/* ✅ FIX: Toți utilizatorii autentificați văd sondajele securizate */}
                 <Link
                   to="/secure-polls"
-                  className="bg-purple-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-purple-700 transition-colors shadow-lg"
+                  className="bg-purple-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-purple-700 transition-colors shadow-lg flex items-center gap-2"
                 >
+                  <Key className="w-5 h-5" />
                   Sondaje Securizate
                 </Link>
                 <Link
                   to="/profile"
-                  className="bg-gray-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-700 transition-colors shadow-lg"
+                  className="bg-gray-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-700 transition-colors shadow-lg flex items-center gap-2"
                 >
+                  <User className="w-5 h-5" />
                   Profilul Meu
                 </Link>
               </div>
@@ -51,14 +63,17 @@ const Home = () => {
             <div className="flex flex-wrap justify-center gap-4">
               <Link
                 to="/register"
-                className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg flex items-center gap-2"
               >
+                <UserPlus className="w-5 h-5" />
                 Începe Acum
+                <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 to="/login"
-                className="bg-gray-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-700 transition-colors shadow-lg"
+                className="bg-gray-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-700 transition-colors shadow-lg flex items-center gap-2"
               >
+                <LogIn className="w-5 h-5" />
                 Autentificare
               </Link>
             </div>
@@ -68,7 +83,9 @@ const Home = () => {
         {/* Features Section */}
         <div className="grid md:grid-cols-3 gap-8 mb-16">
           <div className="bg-white rounded-xl p-8 shadow-lg text-center">
-            <div className="text-4xl mb-4">📊</div>
+            <div className="flex justify-center mb-4">
+              <BarChart3 className="w-12 h-12 text-blue-600" />
+            </div>
             <h3 className="text-xl font-bold mb-4 text-gray-900">Sondaje Clasice</h3>
             <p className="text-gray-600">
               Creează sondaje simple și eficiente pentru comunitatea ta. 
@@ -77,7 +94,9 @@ const Home = () => {
           </div>
           
           <div className="bg-white rounded-xl p-8 shadow-lg text-center">
-            <div className="text-4xl mb-4">🔐</div>
+            <div className="flex justify-center mb-4">
+              <Shield className="w-12 h-12 text-purple-600" />
+            </div>
             <h3 className="text-xl font-bold mb-4 text-gray-900">Sondaje Securizate</h3>
             <p className="text-gray-600">
               Criptare homomorfă pentru voturi anonime și sigure.
@@ -85,7 +104,9 @@ const Home = () => {
           </div>
           
           <div className="bg-white rounded-xl p-8 shadow-lg text-center">
-            <div className="text-4xl mb-4">📱</div>
+            <div className="flex justify-center mb-4">
+              <Smartphone className="w-12 h-12 text-green-600" />
+            </div>
             <h3 className="text-xl font-bold mb-4 text-gray-900">Accesibil Oriunde</h3>
             <p className="text-gray-600">
               Platformă responsive care funcționează perfect pe desktop, 
@@ -93,31 +114,6 @@ const Home = () => {
             </p>
           </div>
         </div>
-
-        {/* Statistics Section */}
-        {/* <div className="bg-white rounded-xl p-8 shadow-lg mb-16">
-          <h2 className="text-3xl font-bold text-center mb-8 text-gray-900">
-            Statistici Platformă
-          </h2>
-          <div className="grid md:grid-cols-4 gap-6 text-center">
-            <div>
-              <div className="text-3xl font-bold text-blue-600 mb-2">1000+</div>
-              <div className="text-gray-600">Sondaje Create</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-green-600 mb-2">5000+</div>
-              <div className="text-gray-600">Voturi Înregistrate</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-purple-600 mb-2">200+</div>
-              <div className="text-gray-600">Utilizatori Activi</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-indigo-600 mb-2">99.9%</div>
-              <div className="text-gray-600">Uptime</div>
-            </div>
-          </div>
-        </div> */}
 
         {/* How It Works Section */}
         <div className="mb-16">
@@ -160,33 +156,6 @@ const Home = () => {
             </div>
           </div>
         </div>
-
-        {/* Call to Action */}
-        {/* <div className="text-center">
-          <h2 className="text-3xl font-bold mb-6 text-gray-900">
-            Gata să Începi?
-          </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Alătură-te comunității noastre și începe să creezi sondaje profesionale astăzi!
-          </p>
-          
-          {!user && (
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link
-                to="/register"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-10 py-4 rounded-lg text-xl font-bold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg transform hover:scale-105"
-              >
-                Înregistrează-te Gratuit
-              </Link>
-              <Link
-                to="/polls"
-                className="bg-gray-600 text-white px-10 py-4 rounded-lg text-xl font-bold hover:bg-gray-700 transition-colors shadow-lg"
-              >
-                Explorează Sondajele
-              </Link>
-            </div>
-          )}
-        </div> */}
       </div>
 
       {/* Footer */}
@@ -232,7 +201,7 @@ const Home = () => {
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 PollMaster. Lucrare pentru licență.</p>
+            <p>&copy; 2025 PollMaster. Lucrare pentru licență.</p>
             <p className="mt-2">Dezvoltat de Luca Stefan</p>
           </div>
         </div>

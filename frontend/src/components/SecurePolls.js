@@ -1,9 +1,11 @@
 // SecurePolls.js - FIXED cu verificări admin corecte
 import React, { useState, useEffect } from 'react';
+import QRCode from 'react-qr-code';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import realClientCryptoService from '../services/RealClientCryptoService';;
+import realClientCryptoService from '../services/RealClientCryptoService';
+import api from '../services/api';
 
 const SecurePolls = () => {
   const [polls, setPolls] = useState([]);
@@ -16,6 +18,9 @@ const SecurePolls = () => {
   const [fetchLoading, setFetchLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [analysisResults, setAnalysisResults] = useState(null);
+  const [fileData, setFileData] = useState(null);
+  const [localResults, setLocalResults] = useState(null);
+  const [qrPollId, setQrPollId] = useState(null);
   const { user, logout, isAdmin } = useAuth(); // ✅ FIX: Importă isAdmin din context
 
   useEffect(() => {
@@ -197,6 +202,43 @@ const SecurePolls = () => {
     }
   };
 
+  // handleFile: parse export JSON and extract poll_id + cryptotexts
+  const handleFile = async e => {
+    const text = await e.target.files[0].text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return alert('Fișier JSON invalid!');
+    }
+    const pollId    = data.poll_info?.id;
+    const cryptos   = Array.isArray(data.encrypted_votes)
+                     ? data.encrypted_votes
+                     : [];
+    if (!pollId || cryptos.length === 0) {
+      return alert('Format nerecunoscut: fișierul trebuie să conțină poll_info.id și encrypted_votes array!');
+    }
+    setFileData({ pollId, cryptotexts: cryptos });
+  };
+
+  // handleLocalTally: send only the encrypted_votes array to backend
+  const handleLocalTally = async () => {
+    if (!fileData?.pollId) {
+      return alert('Încarcă mai întâi un fișier JSON valid!');
+    }
+    try {
+      const resp = await api.post(
+        `/secure-polls/${fileData.pollId}/local-tally`,
+        // backend expects List[Dict], so pass array of vote objects
+        fileData.cryptotexts
+      );
+      setLocalResults(resp.data);
+    } catch (err) {
+      console.error(err);
+      alert('Eroare la calcul local: ' + (err.response?.data?.detail || err.message));
+    }
+  };
+
   // Early return for auth check
   if (!user) {
     return (
@@ -323,6 +365,40 @@ const SecurePolls = () => {
         </form>
       )}
 
+      {/* Tally local din fișier JSON - noua secțiune */}
+      {/* <div className="mb-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <h2 className="text-lg font-semibold mb-2">Tally local din fișier JSON</h2>
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm mb-1">Încarcă cryptotexts:</label>
+            <input
+              type="file"
+              accept="application/json"
+              onChange={handleFile}
+              className="block"
+            />
+          </div>
+          <button
+            onClick={handleLocalTally}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Calculează local
+          </button>
+        </div>
+
+        {localResults && (
+          <div className="mt-4 bg-white p-3 rounded border border-gray-200">
+            <h3 className="font-semibold mb-2">Rezultate locale:</h3>
+            {Object.entries(localResults).map(([opt, cnt]) => (
+              <div key={opt} className="flex justify-between py-1">
+                <span>Opțiunea {opt}</span>
+                <span className="font-bold">{cnt} voturi</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div> */}
+
       {/* ✅ FIX: Mesaj pentru non-admin */}
       {!userIsAdmin && (
         <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded">
@@ -393,6 +469,13 @@ const SecurePolls = () => {
                       >
                         {poll.is_active ? '🗳️ Votează' : '📊 Vezi Rezultate'}
                       </Link>
+                      
+                      <button
+                        onClick={() => setQrPollId(poll._id)}
+                        className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 text-sm"
+                      >
+                        📱 Vezi QR
+                      </button>
                       
                       {poll.is_active && (userIsAdmin || poll.creator_id === user.id) && (
                         <button
@@ -535,6 +618,28 @@ const SecurePolls = () => {
           >
             Închide Analiza
           </button>
+        </div>
+      )}
+
+      {/* Tally local din fișier JSON - secțiune mutată mai sus */}
+
+      {/* QR modal */}
+      {qrPollId && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl text-center w-full max-w-sm space-y-6">
+            <h3 className="text-2xl font-semibold text-gray-800">Scanează pentru a deschide sondajul</h3>
+            <QRCode 
+              value={`${window.location.origin}/secure-polls/${qrPollId}`} 
+              size={220}
+              className="mx-auto"
+            />
+            <button
+              onClick={() => setQrPollId(null)}
+              className="mt-4 bg-red-500 hover:bg-red-600 text-white font-medium px-6 py-2 rounded-lg transition-colors"
+            >
+              Închide
+            </button>
+          </div>
         </div>
       )}
     </div>

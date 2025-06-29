@@ -19,6 +19,9 @@ const RealSecurePollDetail = () => {
   const [votingToken, setVotingToken] = useState(null);
   const [generatingToken, setGeneratingToken] = useState(false);
   const [clientCryptoTest, setClientCryptoTest] = useState(null);
+  const [tokenProgress, setTokenProgress] = useState(0);
+  const [hasVoted, setHasVoted] = useState(false); // Adaugă state pentru verificarea votului
+  const [checkingVoteStatus, setCheckingVoteStatus] = useState(false); // State pentru loading verificare
 
   console.log('🚀 REAL Client-Side Crypto Poll Detail - pollId:', pollId);
 
@@ -54,6 +57,11 @@ const RealSecurePollDetail = () => {
         console.error('❌ Client-side crypto initialization failed:', cryptoError);
         setMessage('⚠️ Inițializarea sistemului criptografic client-side a eșuat. Votarea poate fi limitată.');
       }
+
+      // Verifică dacă utilizatorul a votat deja
+      if (user) {
+        await checkIfUserHasVoted();
+      }
       
     } catch (error) {
       console.error('❌ Error fetching poll:', error);
@@ -65,6 +73,53 @@ const RealSecurePollDetail = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Funcție pentru verificarea dacă utilizatorul a votat
+  const checkIfUserHasVoted = async () => {
+    if (!user || !pollId) return;
+
+    setCheckingVoteStatus(true);
+    try {
+      console.log('🔍 Checking if user has voted on poll:', pollId);
+      
+      const response = await axios.get(
+        `http://localhost:5000/secure-polls/${pollId}/vote-status`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      console.log('✅ Vote status response:', response.data);
+      setHasVoted(response.data.has_voted);
+      
+      if (response.data.has_voted) {
+        setMessage(
+          '✅ Ai votat deja la acest sondaj securizat!\n' +
+          '🔐 Votul tău a fost înregistrat cu criptografie client-side\n' +
+          '🛡️ Identitatea ta rămâne complet anonimă\n' +
+          '📊 Poți vizualiza rezultatele când sondajul se încheie'
+        );
+      }
+      
+    } catch (error) {
+      console.error('❌ Error checking vote status:', error);
+      
+      if (error.response?.status === 401) {
+        console.log('🔄 User not authenticated, vote status unknown');
+        setHasVoted(false);
+      } else if (error.response?.status === 404) {
+        console.log('📭 No vote record found for this user');
+        setHasVoted(false);
+      } else {
+        console.log('⚠️ Could not determine vote status, allowing voting');
+        setHasVoted(false);
+      }
+    } finally {
+      setCheckingVoteStatus(false);
     }
   };
 
@@ -80,26 +135,63 @@ const RealSecurePollDetail = () => {
     }
 
     setGeneratingToken(true);
+    setTokenProgress(0);
     setMessage('🔐 Se generează token-ul de vot anonim cu REAL client-side blind signatures...');
 
     try {
+      // FASE 1: Animație inițială de 2 secunde
+      const initialProgressInterval = setInterval(() => {
+        setTokenProgress(prev => {
+          if (prev >= 85) {
+            return 85; // Se oprește la 85%
+          }
+          return prev + Math.random() * 12 + 3; // Progres rapid până la 85%
+        });
+      }, 150);
+
+      // Așteaptă exact 2 secunde pentru animația inițială
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Oprește animația inițială
+      clearInterval(initialProgressInterval);
+      
       console.log('🎫 Generating REAL client-side anonymous voting token...');
+      
+      // FASE 2: Procesarea reală + finalizare progres
+      const finalProgressInterval = setInterval(() => {
+        setTokenProgress(prev => {
+          if (prev >= 95) {
+            clearInterval(finalProgressInterval);
+            return 95;
+          }
+          return prev + 2;
+        });
+      }, 100);
       
       // REAL client-side token generation
       const token = await RealCryptoService.getAnonymousVotingToken(pollId);
       
-      setVotingToken(token);
-      setMessage(
-        '✅ Token de vot anonim generat cu succes pe CLIENT-SIDE! \n' +
-        '🔒 Blinding și unblinding realizate în browser-ul tău \n' +
-        '🔐 Semnătura a fost verificată criptografic pe client \n' +
-        '🚫 Serverul nu a văzut niciodată mesajul original \n' +
-        '🗳️ Poți vota acum cu anonimitate completă!'
-      );
+      // Completează progresul la 100%
+      clearInterval(finalProgressInterval);
+      setTokenProgress(100);
+      
+      // Delay pentru a arăta completarea
+      setTimeout(() => {
+        setVotingToken(token);
+        setTokenProgress(0);
+        setMessage(
+          '✅ Token de vot anonim generat cu succes pe CLIENT-SIDE! \n' +
+          '🔒 Blinding și unblinding realizate în browser-ul tău \n' +
+          '🔐 Semnătura a fost verificată criptografic pe client \n' +
+          '🚫 Serverul nu a văzut niciodată mesajul original \n' +
+          '🗳️ Poți vota acum cu anonimitate completă!'
+        );
+      }, 500);
       
       console.log('✅ REAL client-side anonymous voting token generated');
       
     } catch (error) {
+      setTokenProgress(0);
       console.error('❌ Error generating client-side voting token:', error);
       
       if (error.response?.status === 400) {
@@ -111,7 +203,7 @@ const RealSecurePollDetail = () => {
         setMessage('❌ Eroare la generarea token-ului de vot pe client');
       }
     } finally {
-      setGeneratingToken(false);
+      setTimeout(() => setGeneratingToken(false), 500);
     }
   };
 
@@ -123,6 +215,11 @@ const RealSecurePollDetail = () => {
 
     if (!poll.is_active) {
       setMessage('❌ Acest sondaj nu mai este activ');
+      return;
+    }
+
+    if (hasVoted) {
+      setMessage('❌ Ai votat deja la acest sondaj securizat');
       return;
     }
 
@@ -158,8 +255,9 @@ const RealSecurePollDetail = () => {
         `🕵️ Zero-Knowledge Proofs au validat corectitudinea votului!`
       );
       
-      // Clear token after use
+      // Clear token after use și marchează că utilizatorul a votat
       setVotingToken(null);
+      setHasVoted(true);
       
       // Refresh poll data
       setTimeout(fetchPoll, 2000);
@@ -169,7 +267,11 @@ const RealSecurePollDetail = () => {
       
       if (error.response?.status === 400) {
         const detail = error.response.data.detail;
-        if (detail && detail.includes('already used')) {
+        if (detail && detail.includes('already voted')) {
+          setMessage('❌ Ai votat deja la acest sondaj');
+          setHasVoted(true);
+          setVotingToken(null);
+        } else if (detail && detail.includes('already used')) {
           setMessage('❌ Token-ul de vot a fost deja folosit');
           setVotingToken(null);
         } else if (detail && detail.includes('Invalid')) {
@@ -236,12 +338,14 @@ const RealSecurePollDetail = () => {
     }
   };
 
-  if (loading) {
+  if (loading || checkingVoteStatus) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Se încarcă sondajul cu REAL client-side crypto...</p>
+          <p className="text-gray-600">
+            {loading ? 'Se încarcă sondajul cu REAL client-side crypto...' : 'Se verifică statusul votului...'}
+          </p>
         </div>
       </div>
     );
@@ -388,95 +492,135 @@ const RealSecurePollDetail = () => {
         {/* REAL client-side voting workflow */}
         {poll.is_active ? (
           <div className="space-y-6">
-            {/* Step 1: Generate client-side token */}
-            {!votingToken ? (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h2 className="text-xl font-semibold mb-4">
-                  🎫 Pasul 1: Obține Token de Vot Anonim (REAL Client-Side)
+            {/* Afișează mesaj dacă utilizatorul a votat deja */}
+            {hasVoted ? (
+              <div className="bg-green-50 p-6 rounded-lg border-l-4 border-green-500">
+                <h2 className="text-xl font-semibold mb-4 text-green-800">
+                  ✅ Ai votat deja la acest sondaj
                 </h2>
-                <p className="text-gray-700 mb-4">
-                  Pentru a vota anonim, trebuie să obții mai întâi un token de vot semnat prin 
-                  procesul de <strong>REAL RSA Blind Signatures procesate în browser-ul tău</strong>.
-                </p>
-                <div className="bg-blue-50 p-3 rounded mb-4 text-sm text-blue-800">
-                  <strong>🔬 Proces tehnic CLIENT-SIDE:</strong>
-                  <br />1. Message generation în browser
-                  <br />2. Client-side RSA blinding cu forge.js
-                  <br />3. Server blind signing (fără acces la mesaj)
-                  <br />4. Client-side unblinding în browser
-                  <br />5. Client-side signature verification
+                <div className="text-green-700 space-y-2">
+                  <p>🔐 <strong>Votul tău securizat a fost înregistrat cu succes!</strong></p>
+                  <p>🛡️ Identitatea ta rămâne complet anonimă datorită criptografiei client-side</p>
+                  <p>📊 Rezultatele vor fi disponibile când sondajul se încheie</p>
+                  <p>🚫 Nu poți vota din nou pentru a preveni dublarea voturilor</p>
                 </div>
-                <button
-                  onClick={generateClientSideVotingToken}
-                  disabled={generatingToken}
-                  className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed"
-                >
-                  {generatingToken ? (
-                    <>
-                      <span className="animate-spin inline-block mr-2">🔄</span>
-                      Se generează token-ul CLIENT-SIDE...
-                    </>
-                  ) : (
-                    '🎫 Generează Token CLIENT-SIDE'
-                  )}
-                </button>
+                
+                <div className="mt-4 p-3 bg-green-100 rounded text-sm">
+                  <strong>🔒 Garanții de privacy:</strong>
+                  <ul className="mt-2 space-y-1">
+                    <li>• Votul tău a fost criptat în browser cu Paillier</li>
+                    <li>• Serverul nu a văzut niciodată plaintext-ul votului</li>
+                    <li>• Semnătura oarbă RSA garantează anonimitatea</li>
+                    <li>• Zero-Knowledge Proofs au validat corectitudinea</li>
+                  </ul>
+                </div>
               </div>
             ) : (
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h2 className="text-xl font-semibold mb-2 text-green-800">
-                  ✅ Token de Vot Anonim Obținut pe CLIENT-SIDE
-                </h2>
-                <p className="text-green-700 text-sm mb-4">
-                  Token-ul tău a fost generat prin procesul de <strong>REAL RSA blind signatures în browser</strong>.
-                  <br />
-                  <strong>Mesaj:</strong> {votingToken.message?.substring(0, 30)}...
-                  <br />
-                  <strong>Semnătură:</strong> {votingToken.signature?.substring(0, 30)}...
-                  <br />
-                  <strong>Verificat pe client:</strong> {votingToken.client_verified ? '✅ Da' : '❌ Nu'}
-                </p>
-                <button
-                  onClick={validateClientSideSignature}
-                  className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 mr-2"
-                >
-                  🔍 Validează Semnătura pe Client
-                </button>
-              </div>
-            )}
-
-            {/* Step 2: Client-side voting */}
-            {votingToken && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">
-                  🗳️ Pasul 2: Alege Opțiunea de Vot (cu Client-Side Encryption)
-                </h2>
-                <div className="bg-purple-50 p-3 rounded mb-4 text-sm text-purple-800">
-                  <strong>🔐 Client-Side Processing:</strong>
-                  <br />• Votul va fi criptat în browser-ul tău cu Paillier
-                  <br />• Zero-Knowledge Proofs generate pe client pentru validare
-                  <br />• Serverul nu va vedea niciodată plaintext-ul votului
-                  <br />• Anonimitate completă garantată criptografic
-                </div>
-                <div className="space-y-3">
-                  {poll.options.map((option, index) => (
+              <>
+                {/* Step 1: Generate client-side token */}
+                {!votingToken ? (
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h2 className="text-xl font-semibold mb-4">
+                      Obține o semnătură care îți validează votul
+                    </h2>
+                    <p className="text-gray-700 mb-4">
+                      Pentru a vota anonim, trebuie mai intai sa faci rost de un buletin de vot semnat de autoritatea centrala.
+                    </p>
+                    <div className="bg-blue-50 p-3 rounded mb-4 text-sm text-blue-800">
+                      <strong>🔬 Proces tehnic CLIENT-SIDE:</strong>
+                      <br />1. Message generation în browser
+                      <br />2. Client-side RSA blinding cu forge.js
+                      <br />3. Server blind signing (fără acces la mesaj)
+                      <br />4. Client-side unblinding în browser
+                      <br />5. Client-side signature verification
+                    </div>
                     <button
-                      key={index}
-                      onClick={() => handleClientSideVote(index)}
-                      disabled={voting}
-                      className="w-full p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg border transition-colors disabled:bg-gray-200 disabled:cursor-not-allowed"
+                      onClick={generateClientSideVotingToken}
+                      disabled={generatingToken}
+                      className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed transition-all duration-300"
                     >
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{option.text}</span>
-                        {voting && (
-                          <span className="text-sm text-gray-500">
-                            🔐 Se criptează pe CLIENT-SIDE cu Paillier...
+                      {generatingToken ? (
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-3"></div>
+                            <span>Se generează token-ul CLIENT-SIDE...</span>
+                          </div>
+                          <div className="w-full bg-blue-300 rounded-full h-2">
+                            <div 
+                              className="bg-white rounded-full h-2 transition-all duration-300 ease-out"
+                              style={{ width: `${tokenProgress}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-xs opacity-75">
+                            {tokenProgress < 30 && "🔐 Generare chei RSA..."}
+                            {tokenProgress >= 30 && tokenProgress < 60 && "🔒 Blinding mesaj..."}
+                            {tokenProgress >= 60 && tokenProgress < 90 && "📡 Cerere semnătură..."}
+                            {tokenProgress >= 90 && "✅ Unblinding & verificare..."}
                           </span>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        'Cere un buletin de vot'
+                      )}
                     </button>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                ) : (
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h2 className="text-xl font-semibold mb-2 text-green-800">
+                      ✅ Token de Vot Anonim Obținut pe CLIENT-SIDE
+                    </h2>
+                    <p className="text-green-700 text-sm mb-4">
+                      Token-ul tău a fost generat prin procesul de <strong>REAL RSA blind signatures în browser</strong>.
+                      <br />
+                      <strong>Mesaj:</strong> {votingToken.message?.substring(0, 30)}...
+                      <br />
+                      <strong>Semnătură:</strong> {votingToken.signature?.substring(0, 30)}...
+                      <br />
+                      <strong>Verificat pe client:</strong> {votingToken.client_verified ? '✅ Da' : '❌ Nu'}
+                    </p>
+                    <button
+                      onClick={validateClientSideSignature}
+                      className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 mr-2"
+                    >
+                      🔍 Validează Semnătura pe Client
+                    </button>
+                  </div>
+                )}
+
+                {/* Step 2: Client-side voting */}
+                {votingToken && (
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4">
+                      🗳️ Pasul 2: Alege Opțiunea de Vot (cu Client-Side Encryption)
+                    </h2>
+                    <div className="bg-purple-50 p-3 rounded mb-4 text-sm text-purple-800">
+                      <strong>🔐 Client-Side Processing:</strong>
+                      <br />• Votul va fi criptat în browser-ul tău cu Paillier
+                      <br />• Zero-Knowledge Proofs generate pe client pentru validare
+                      <br />• Serverul nu va vedea niciodată plaintext-ul votului
+                      <br />• Anonimitate completă garantată criptografic
+                    </div>
+                    <div className="space-y-3">
+                      {poll.options.map((option, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleClientSideVote(index)}
+                          disabled={voting}
+                          className="w-full p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg border transition-colors disabled:bg-gray-200 disabled:cursor-not-allowed"
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{option.text}</span>
+                            {voting && (
+                              <span className="text-sm text-gray-500">
+                                🔐 Se criptează pe CLIENT-SIDE cu Paillier...
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         ) : (
@@ -585,6 +729,8 @@ const RealSecurePollDetail = () => {
             <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
               <strong>🚀 Client-Side Debug Info:</strong>
               <br />Poll ID: {poll._id}
+              <br />User Has Voted: {hasVoted ? 'YES' : 'NO'}
+              <br />Checking Vote Status: {checkingVoteStatus ? 'YES' : 'NO'}
               <br />Client-Side Encryption: {cryptoStatus?.client_side_encryption ? 'YES' : 'NO'}
               <br />Client-Side Blind Sigs: {cryptoStatus?.client_side_blind_signatures ? 'YES' : 'NO'}
               <br />Client-Side ZKP: {cryptoStatus?.client_side_zk_proofs ? 'YES' : 'NO'}

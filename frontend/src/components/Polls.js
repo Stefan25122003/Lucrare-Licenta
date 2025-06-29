@@ -3,6 +3,27 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { 
+  Search, 
+  Plus, 
+  ChevronDown, 
+  ChevronUp, 
+  RotateCcw, 
+  User, 
+  Calendar, 
+  Vote, 
+  Trophy, 
+  TrendingDown, 
+  AlphabeticallyOrder,
+  X,
+  Eye,
+  BarChart3,
+  Clock,
+  UserCheck,
+  Users,
+  Lock,
+  CheckCircle
+} from 'lucide-react';
 
 const Polls = () => {
   const [polls, setPolls] = useState([]);
@@ -177,13 +198,15 @@ const Polls = () => {
           ></div>
         </div>
         {isClosedPoll && (
-          <div className="text-xs text-red-600 mt-1">
-            🔒 Sondaj închis - nu se mai pot adăuga voturi
+          <div className="text-xs text-red-600 mt-1 flex items-center gap-1">
+            <Lock className="w-3 h-3" />
+            Sondaj închis - nu se mai pot adăuga voturi
           </div>
         )}
         {userHasVoted && !isClosedPoll && (
-          <div className="text-xs text-gray-500 mt-1">
-            ✓ Ai votat deja la acest sondaj
+          <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+            <CheckCircle className="w-3 h-3" />
+            Ai votat deja la acest sondaj
           </div>
         )}
       </div>
@@ -296,7 +319,8 @@ const Polls = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl mb-6">
+      <h1 className="text-3xl mb-6 flex items-center gap-2">
+        <Vote className="w-8 h-8 text-blue-600" />
         Sondaje ({filteredPolls.length})
       </h1>
       
@@ -310,13 +334,14 @@ const Polls = () => {
       <div className="mb-6 bg-white rounded-lg shadow-md p-4">
         <div className="flex flex-wrap items-center gap-4 mb-4">
           {/* Căutare */}
-          <div className="flex-1 min-w-64">
+          <div className="flex-1 min-w-64 relative">
+            <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="🔍 Caută sondaje, creatori sau opțiuni..."
+              placeholder="Caută sondaje, creatori sau opțiuni..."
               value={filters.searchTerm}
               onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full p-2 pl-10 border rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -347,17 +372,28 @@ const Polls = () => {
           {/* Toggle filtre avansate */}
           <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2"
           >
-            {showAdvancedFilters ? '🔼 Mai puține filtre' : '🔽 Mai multe filtre'}
+            {showAdvancedFilters ? (
+              <>
+                <ChevronUp className="w-4 h-4" />
+                Mai puține filtre
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4" />
+                Mai multe filtre
+              </>
+            )}
           </button>
 
           {/* Reset */}
           <button
             onClick={resetFilters}
-            className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+            className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
           >
-            🔄 Reset
+            <RotateCcw className="w-4 h-4" />
+            Reset
           </button>
         </div>
 
@@ -368,8 +404,9 @@ const Polls = () => {
               
               {/* Creator */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  👤 Creator
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <User className="w-4 h-4" />
+                  Creator
                 </label>
                 <select
                   value={filters.createdBy}
@@ -384,8 +421,9 @@ const Polls = () => {
 
               {/* Perioada */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  📅 Perioada
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  Perioada
                 </label>
                 <select
                   value={filters.dateRange}
@@ -401,8 +439,9 @@ const Polls = () => {
 
               {/* Voturi minime */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  🗳️ Voturi min
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <Vote className="w-4 h-4" />
+                  Voturi min
                 </label>
                 <input
                   type="number"
@@ -416,8 +455,9 @@ const Polls = () => {
 
               {/* Voturi maxime */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  🏆 Voturi max
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                  <Trophy className="w-4 h-4" />
+                  Voturi max
                 </label>
                 <input
                   type="number"
@@ -433,12 +473,21 @@ const Polls = () => {
             {/* Statistici filtrare */}
             <div className="mt-4 p-3 bg-gray-50 rounded-lg">
               <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                <span>📊 Total sondaje: {polls.length}</span>
-                <span>✅ Afișate: {filteredPolls.length}</span>
+                <span className="flex items-center gap-1">
+                  <BarChart3 className="w-4 h-4" />
+                  Total sondaje: {polls.length}
+                </span>
+                <span className="flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" />
+                  Afișate: {filteredPolls.length}
+                </span>
                 <span>🟢 Active: {polls.filter(p => p.is_active).length}</span>
                 <span>🔴 Închise: {polls.filter(p => !p.is_active).length}</span>
                 {user && (
-                  <span>👤 Ale mele: {polls.filter(p => p.created_by === user.id).length}</span>
+                  <span className="flex items-center gap-1">
+                    <UserCheck className="w-4 h-4" />
+                    Ale mele: {polls.filter(p => p.created_by === user.id).length}
+                  </span>
                 )}
               </div>
             </div>
@@ -460,13 +509,14 @@ const Polls = () => {
             <div className="flex items-center justify-center gap-2">
               {showCreateForm ? (
                 <>
-                  <span className="text-xl"></span>
-                  <span className="font-medium">🔼 Ascunde formularul de creare</span>
+                  <ChevronUp className="w-5 h-5" />
+                  <span className="font-medium">Ascunde formularul de creare</span>
                 </>
               ) : (
                 <>
-                  <span className="text-xl">➕</span>
-                  <span className="font-medium">🔽 Creează un sondaj nou</span>
+                  <Plus className="w-5 h-5" />
+                  <span className="font-medium">Creează un sondaj nou</span>
+                  <ChevronDown className="w-5 h-5" />
                 </>
               )}
             </div>
@@ -478,14 +528,17 @@ const Polls = () => {
       {filters.status !== 'closed' && showCreateForm && (
         <form onSubmit={createPoll} className="mb-8 p-6 bg-white rounded-lg shadow-md border">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold"> Creează Sondaj Nou</h2>
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Plus className="w-6 h-6 text-blue-600" />
+              Creează Sondaj Nou
+            </h2>
             <button
               type="button"
               onClick={() => setShowCreateForm(false)}
               className="text-gray-500 hover:text-gray-700"
               title="Închide formularul"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
           </div>
           
@@ -526,7 +579,7 @@ const Polls = () => {
                     className="ml-2 px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
                     title="Șterge opțiunea"
                   >
-                    ✕
+                    <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
@@ -537,18 +590,29 @@ const Polls = () => {
             <button 
               type="button"
               onClick={() => setNewPoll({...newPoll, options: [...newPoll.options, '']})}
-              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2"
               disabled={loading}
             >
-              ➕ Adaugă Opțiune
+              <Plus className="w-4 h-4" />
+              Adaugă Opțiune
             </button>
             
             <button 
               type="submit" 
-              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 disabled:bg-blue-300 transition-colors"
+              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 disabled:bg-blue-300 transition-colors flex items-center gap-2"
               disabled={loading}
             >
-              {loading ? '⏳ Se creează...' : ' Creează Sondaj'}
+              {loading ? (
+                <>
+                  <Clock className="w-4 h-4 animate-spin" />
+                  Se creează...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Creează Sondaj
+                </>
+              )}
             </button>
 
             <button
@@ -557,10 +621,11 @@ const Polls = () => {
                 setNewPoll({ title: '', options: ['', ''] });
                 setShowCreateForm(false);
               }}
-              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
               disabled={loading}
             >
-              ❌ Anulează
+              <X className="w-4 h-4" />
+              Anulează
             </button>
           </div>
         </form>
@@ -571,18 +636,21 @@ const Polls = () => {
         <div className="text-center py-8 text-gray-500">
           {polls.length === 0 ? (
             <div>
-              <p className="text-lg mb-2">📭 Nu există sondaje încă</p>
+              <Vote className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <p className="text-lg mb-2">Nu există sondaje încă</p>
               <p>Fii primul care creează un sondaj!</p>
             </div>
           ) : (
             <div>
-              <p className="text-lg mb-2">🔍 Nu s-au găsit sondaje</p>
+              <Search className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <p className="text-lg mb-2">Nu s-au găsit sondaje</p>
               <p>Încearcă să modifici filtrele de căutare</p>
               <button
                 onClick={resetFilters}
-                className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2 mx-auto"
               >
-                🔄 Resetează filtrele
+                <RotateCcw className="w-4 h-4" />
+                Resetează filtrele
               </button>
             </div>
           )}
@@ -605,7 +673,8 @@ const Polls = () => {
               
               {poll.options.map((option, index) => renderPollOption(poll, option, index))}
               
-              <div className="text-xs text-gray-500 mt-2">
+              <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                <Vote className="w-3 h-3" />
                 Total voturi: {poll.total_votes || poll.options.reduce((sum, opt) => sum + opt.votes, 0)}
               </div>
               
@@ -614,41 +683,58 @@ const Polls = () => {
                 {/* Buton pentru a vedea sondajul */}
                 <Link
                   to={`/polls/${poll.id}`}
-                  className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors"
+                  className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors flex items-center gap-1"
                 >
-                   Vezi
+                  <Eye className="w-3 h-3" />
+                  Vezi
                 </Link>
                 
                 {/* Buton pentru statistici - afișează pentru toate sondajele închise sau cele la care nu s-a votat */}
                 {(!poll.is_active || !hasUserVoted(poll)) && (
                   <Link 
                     to={`/polls/${poll.id}/statistics`}
-                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded text-sm"
+                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded text-sm flex items-center gap-1"
                   >
+                    <BarChart3 className="w-3 h-3" />
                     Statistici
                   </Link>
                 )}
                 
                 {/* Badge pentru status */}
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${
                   poll.is_active 
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-red-100 text-red-800'
                 }`}>
-                  {poll.is_active ? '🟢 Activ' : '🔴 Închis'}
+                  {poll.is_active ? (
+                    <>
+                      <CheckCircle className="w-3 h-3" />
+                      Activ
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3 h-3" />
+                      Închis
+                    </>
+                  )}
                 </span>
               </div>
               
               {/* Informații despre creator și voturi */}
               <div className="mt-3 pt-3 border-t border-gray-100">
                 <div className="flex justify-between items-center text-sm text-gray-600">
-                  <Link to={`/users/${poll.creator_username}`}>
-                    👤 {poll.creator_username}
+                  <Link to={`/users/${poll.creator_username}`} className="flex items-center gap-1 hover:text-blue-600">
+                    <User className="w-3 h-3" />
+                    {poll.creator_username}
                   </Link>
-                  <span>🗳️ {poll.total_votes} voturi</span>
+                  <span className="flex items-center gap-1">
+                    <Vote className="w-3 h-3" />
+                    {poll.total_votes} voturi
+                  </span>
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  📅 {new Date(poll.created_at).toLocaleDateString('ro-RO')}
+                <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {new Date(poll.created_at).toLocaleDateString('ro-RO')}
                 </div>
               </div>
             </div>
@@ -665,7 +751,7 @@ const Polls = () => {
             className="bg-purple-500 text-white p-3 rounded-full shadow-lg hover:bg-purple-600 transition-colors"
             title="Creează sondaj nou"
           >
-            ➕
+            <Plus className="w-5 h-5" />
           </button>
         )}
         
@@ -674,21 +760,21 @@ const Polls = () => {
           className="bg-blue-500 text-white p-3 rounded-full shadow-lg hover:bg-blue-600 transition-colors"
           title="Sondajele mele active"
         >
-          👤
+          <UserCheck className="w-5 h-5" />
         </button>
         <button
           onClick={() => setFilters(prev => ({ ...prev, sortBy: 'most_votes', status: 'all' }))}
           className="bg-green-500 text-white p-3 rounded-full shadow-lg hover:bg-green-600 transition-colors"
           title="Cele mai populare"
         >
-          🏆
+          <Trophy className="w-5 h-5" />
         </button>
         <button
           onClick={() => setFilters(prev => ({ ...prev, dateRange: 'today', status: 'active' }))}
           className="bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-colors"
           title="Sondaje de astăzi"
         >
-          📅
+          <Calendar className="w-5 h-5" />
         </button>
       </div>
     </div>
