@@ -1,4 +1,4 @@
-// SecurePolls.js - FIXED cu verificări admin corecte
+// SecurePolls.js - FIXED cu verificări admin corecte și react-lucide icons
 import React, { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 import { Link } from 'react-router-dom';
@@ -6,6 +6,33 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import realClientCryptoService from '../services/RealClientCryptoService';
 import api from '../services/api';
+import { 
+  Shield, 
+  Lock, 
+  RefreshCw, 
+  User, 
+  Calendar, 
+  Clock, 
+  Vote, 
+  BarChart3, 
+  Smartphone, 
+  Plus, 
+  X, 
+  CheckCircle, 
+  XCircle, 
+  Download, 
+  FileText, 
+  Microscope,
+  Eye,
+  AlertTriangle,
+  Users,
+  Key,
+  UserCheck,
+  Settings,
+  Database,
+  Target,
+  Zap
+} from 'lucide-react';
 
 const SecurePolls = () => {
   const [polls, setPolls] = useState([]);
@@ -21,7 +48,7 @@ const SecurePolls = () => {
   const [fileData, setFileData] = useState(null);
   const [localResults, setLocalResults] = useState(null);
   const [qrPollId, setQrPollId] = useState(null);
-  const { user, logout, isAdmin } = useAuth(); // ✅ FIX: Importă isAdmin din context
+  const { user, logout, isAdmin } = useAuth();
 
   useEffect(() => {
     console.log('🚀 Component mounted, fetching polls...');
@@ -60,7 +87,6 @@ const SecurePolls = () => {
   const createSecurePoll = async (e) => {
     e.preventDefault();
     
-    // ✅ FIX: Verifică admin status corect
     const userIsAdmin = isAdmin || user?.is_admin || false;
     
     if (!user || !userIsAdmin) {
@@ -112,7 +138,6 @@ const SecurePolls = () => {
       
       console.log('✅ Secure poll created:', response.data);
       
-      // Refresh polls
       await fetchSecurePolls();
       
       setNewPoll({ title: '', options: ['', ''], end_date: '' });
@@ -211,8 +236,8 @@ const SecurePolls = () => {
     } catch {
       return alert('Fișier JSON invalid!');
     }
-    const pollId    = data.poll_info?.id;
-    const cryptos   = Array.isArray(data.encrypted_votes)
+    const pollId = data.poll_info?.id;
+    const cryptos = Array.isArray(data.encrypted_votes)
                      ? data.encrypted_votes
                      : [];
     if (!pollId || cryptos.length === 0) {
@@ -229,7 +254,6 @@ const SecurePolls = () => {
     try {
       const resp = await api.post(
         `/secure-polls/${fileData.pollId}/local-tally`,
-        // backend expects List[Dict], so pass array of vote objects
         fileData.cryptotexts
       );
       setLocalResults(resp.data);
@@ -244,6 +268,9 @@ const SecurePolls = () => {
     return (
       <div className="container mx-auto p-4">
         <div className="text-center py-8">
+          <div className="flex items-center justify-center mb-4">
+            <AlertTriangle className="w-12 h-12 text-yellow-500" />
+          </div>
           <h1 className="text-2xl mb-4">Acces Restricționat</h1>
           <p className="text-gray-600">Trebuie să te autentifici pentru a vedea sondajele securizate.</p>
         </div>
@@ -251,51 +278,85 @@ const SecurePolls = () => {
     );
   }
 
-  // ✅ FIX: Calculează admin status corect
   const userIsAdmin = isAdmin || user?.is_admin || false;
 
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">🔐 Sondaje Securizate</h1>
+        <div className="flex items-center gap-3">
+          <Shield className="w-8 h-8 text-blue-600" />
+          <h1 className="text-3xl font-bold">Sondaje Securizate</h1>
+        </div>
         <button 
           onClick={fetchSecurePolls}
           disabled={fetchLoading}
-          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 disabled:bg-gray-300"
+          className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 disabled:bg-gray-300"
         >
-          {fetchLoading ? '🔄 Se încarcă...' : '🔄 Reîncarcă'}
+          <RefreshCw className={`w-4 h-4 ${fetchLoading ? 'animate-spin' : ''}`} />
+          {fetchLoading ? 'Se încarcă...' : 'Reîncarcă'}
         </button>
       </div>
       
       {/* Debug info - Enhanced */}
       <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-sm">
-        <strong>🔍 Debug Info:</strong><br />
-        • User: {user?.username} ({user?.email})<br />
-        • Admin din context: {isAdmin ? '✅ Da' : '❌ Nu'}<br />
-        • Admin din user: {user?.is_admin ? '✅ Da' : '❌ Nu'}<br />
-        • Admin final: {userIsAdmin ? '✅ Da' : '❌ Nu'}<br />
-        • Polls în state: {polls.length}<br />
-        • Loading: {fetchLoading ? 'Da' : 'Nu'}
+        <div className="flex items-center gap-2 mb-2">
+          <Settings className="w-4 h-4" />
+          <strong>Debug Info:</strong>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="flex items-center gap-2">
+            <User className="w-3 h-3" />
+            <span>User: {user?.username} ({user?.email})</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <UserCheck className="w-3 h-3" />
+            <span>Admin din context: {isAdmin ? <CheckCircle className="w-3 h-3 text-green-500 inline" /> : <XCircle className="w-3 h-3 text-red-500 inline" />}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Key className="w-3 h-3" />
+            <span>Admin din user: {user?.is_admin ? <CheckCircle className="w-3 h-3 text-green-500 inline" /> : <XCircle className="w-3 h-3 text-red-500 inline" />}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Shield className="w-3 h-3" />
+            <span>Admin final: {userIsAdmin ? <CheckCircle className="w-3 h-3 text-green-500 inline" /> : <XCircle className="w-3 h-3 text-red-500 inline" />}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Database className="w-3 h-3" />
+            <span>Polls în state: {polls.length}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <RefreshCw className="w-3 h-3" />
+            <span>Loading: {fetchLoading ? 'Da' : 'Nu'}</span>
+          </div>
+        </div>
       </div>
       
       {message && (
-        <div className={`mb-4 p-3 rounded ${
+        <div className={`mb-4 p-3 rounded flex items-center gap-2 ${
           message.includes('✅') || message.includes('succes') 
             ? 'bg-green-100 text-green-800' 
             : 'bg-red-100 text-red-800'
         }`}>
+          {message.includes('✅') || message.includes('succes') ? 
+            <CheckCircle className="w-4 h-4" /> : 
+            <XCircle className="w-4 h-4" />
+          }
           {message}
         </div>
       )}
 
-      {/* ✅ FIX: Admin form - folosește userIsAdmin */}
+      {/* Admin form */}
       {userIsAdmin && (
         <form onSubmit={createSecurePoll} className="mb-8 p-4 bg-white rounded shadow border-2 border-green-200">
-          <h2 className="text-xl font-bold mb-4 text-green-700">
-            🛡️ Creează Sondaj Securizat (Admin)
-          </h2>
-          <div className="bg-green-50 p-2 rounded mb-4 text-sm text-green-800">
-            ✅ Acces admin confirmat pentru {user.username}
+          <div className="flex items-center gap-2 mb-4">
+            <Shield className="w-5 h-5 text-green-600" />
+            <h2 className="text-xl font-bold text-green-700">
+              Creează Sondaj Securizat (Admin)
+            </h2>
+          </div>
+          <div className="bg-green-50 p-2 rounded mb-4 text-sm text-green-800 flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Acces admin confirmat pentru {user.username}
           </div>
           
           <input
@@ -336,9 +397,9 @@ const SecurePolls = () => {
                     const newOptions = newPoll.options.filter((_, i) => i !== index);
                     setNewPoll({...newPoll, options: newOptions});
                   }}
-                  className="ml-2 px-3 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
+                  className="ml-2 px-3 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200 flex items-center"
                 >
-                  ✕
+                  <X className="w-4 h-4" />
                 </button>
               )}
             </div>
@@ -348,62 +409,34 @@ const SecurePolls = () => {
             <button 
               type="button"
               onClick={() => setNewPoll({...newPoll, options: [...newPoll.options, '']})}
-              className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+              className="flex items-center gap-2 bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
               disabled={loading}
             >
-              + Adaugă Opțiune
+              <Plus className="w-4 h-4" />
+              Adaugă Opțiune
             </button>
             
             <button 
               type="submit" 
-              className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:bg-blue-300"
+              className="flex items-center gap-2 bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:bg-blue-300"
               disabled={loading}
             >
+              <Shield className="w-4 h-4" />
               {loading ? 'Se creează...' : 'Creează Sondaj Securizat'}
             </button>
           </div>
         </form>
       )}
 
-      {/* Tally local din fișier JSON - noua secțiune */}
-      {/* <div className="mb-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-        <h2 className="text-lg font-semibold mb-2">Tally local din fișier JSON</h2>
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="block text-sm mb-1">Încarcă cryptotexts:</label>
-            <input
-              type="file"
-              accept="application/json"
-              onChange={handleFile}
-              className="block"
-            />
-          </div>
-          <button
-            onClick={handleLocalTally}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Calculează local
-          </button>
-        </div>
-
-        {localResults && (
-          <div className="mt-4 bg-white p-3 rounded border border-gray-200">
-            <h3 className="font-semibold mb-2">Rezultate locale:</h3>
-            {Object.entries(localResults).map(([opt, cnt]) => (
-              <div key={opt} className="flex justify-between py-1">
-                <span>Opțiunea {opt}</span>
-                <span className="font-bold">{cnt} voturi</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div> */}
-
-      {/* ✅ FIX: Mesaj pentru non-admin */}
+      {/* Mesaj pentru non-admin */}
       {!userIsAdmin && (
         <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded">
-          <h2 className="text-xl font-bold mb-2 text-red-700">🔒 Acces Restricționat</h2>
-          <p className="text-red-600">
+          <div className="flex items-center gap-2 mb-2">
+            <Lock className="w-5 h-5 text-red-600" />
+            <h2 className="text-xl font-bold text-red-700">Acces Restricționat</h2>
+          </div>
+          <p className="text-red-600 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
             Doar administratorii pot crea sondaje securizate. 
             Utilizatorul curent ({user.username}) nu are privilegii de administrator.
           </p>
@@ -413,7 +446,9 @@ const SecurePolls = () => {
       {/* Loading state */}
       {fetchLoading && (
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <div className="flex items-center justify-center mb-4">
+            <RefreshCw className="w-12 h-12 text-blue-500 animate-spin" />
+          </div>
           <p className="text-gray-600">Se încarcă sondajele securizate...</p>
         </div>
       )}
@@ -422,21 +457,29 @@ const SecurePolls = () => {
       {!fetchLoading && (
         polls.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
+            <div className="flex items-center justify-center mb-4">
+              <Database className="w-12 h-12 text-gray-400" />
+            </div>
             <p className="text-lg mb-4">Nu există sondaje securizate disponibile.</p>
             {userIsAdmin && (
-              <p className="text-sm">Creează primul sondaj securizat folosind formularul de mai sus.</p>
+              <p className="text-sm flex items-center justify-center gap-2">
+                <Target className="w-4 h-4" />
+                Creează primul sondaj securizat folosind formularul de mai sus.
+              </p>
             )}
           </div>
         ) : (
           <div className="grid gap-6">
-            <div className="text-sm text-gray-600 mb-4">
+            <div className="text-sm text-gray-600 mb-4 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
               Afișez {polls.length} sondaje securizate:
             </div>
             {polls.map((poll, index) => {
               if (!poll._id) {
                 return (
-                  <div key={`error-${index}`} className="bg-red-50 p-4 rounded border border-red-200">
-                    ❌ Sondaj cu date incomplete (lipsește ID)
+                  <div key={`error-${index}`} className="bg-red-50 p-4 rounded border border-red-200 flex items-center gap-2">
+                    <XCircle className="w-4 h-4 text-red-500" />
+                    Sondaj cu date incomplete (lipsește ID)
                   </div>
                 );
               }
@@ -445,19 +488,32 @@ const SecurePolls = () => {
                 <div key={poll._id} className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h2 className="text-xl font-bold mb-2">{poll.title}</h2>
+                      <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                        <Vote className="w-5 h-5 text-blue-600" />
+                        {poll.title}
+                      </h2>
                       <div className="flex items-center space-x-4 text-sm text-gray-600">
-                        <span>📅 Creat: {new Date(poll.created_at).toLocaleDateString('ro-RO')}</span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          Creat: {new Date(poll.created_at).toLocaleDateString('ro-RO')}
+                        </span>
                         {poll.end_date && (
-                          <span>⏰ Încheiere: {new Date(poll.end_date).toLocaleString('ro-RO')}</span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Încheiere: {new Date(poll.end_date).toLocaleString('ro-RO')}
+                          </span>
                         )}
-                        <span className={`px-2 py-1 rounded text-xs ${
+                        <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
                           poll.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
-                          {poll.is_active ? '🟢 Activ' : '🔴 Închis'}
+                          {poll.is_active ? 
+                            <><CheckCircle className="w-3 h-3" /> Activ</> : 
+                            <><XCircle className="w-3 h-3" /> Închis</>
+                          }
                         </span>
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          📊 {poll.total_votes || 0} voturi
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {poll.total_votes || 0} voturi
                         </span>
                       </div>
                     </div>
@@ -465,24 +521,29 @@ const SecurePolls = () => {
                     <div className="flex space-x-2">
                       <Link
                         to={`/secure-polls/${poll._id}`}
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
+                        className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
                       >
-                        {poll.is_active ? '🗳️ Votează' : '📊 Vezi Rezultate'}
+                        {poll.is_active ? 
+                          <><Vote className="w-4 h-4" /> Votează</> : 
+                          <><BarChart3 className="w-4 h-4" /> Vezi Rezultate</>
+                        }
                       </Link>
                       
                       <button
                         onClick={() => setQrPollId(poll._id)}
-                        className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 text-sm"
+                        className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 text-sm"
                       >
-                        📱 Vezi QR
+                        <Smartphone className="w-4 h-4" />
+                        Vezi QR
                       </button>
                       
                       {poll.is_active && (userIsAdmin || poll.creator_id === user.id) && (
                         <button
                           onClick={() => closeSecurePoll(poll._id)}
-                          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm"
+                          className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm"
                         >
-                          🔒 Închide Sondaj
+                          <Lock className="w-4 h-4" />
+                          Închide Sondaj
                         </button>
                       )}
                     </div>
@@ -490,12 +551,16 @@ const SecurePolls = () => {
                   
                   {/* Options */}
                   <div className="space-y-2">
-                    <h3 className="font-semibold text-gray-700 mb-2">Opțiuni:</h3>
+                    <h3 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                      <Target className="w-4 h-4" />
+                      Opțiuni:
+                    </h3>
                     {poll.options && poll.options.map && poll.options.map((option, optIndex) => (
                       <div key={optIndex} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                         <span>{option.text}</span>
                         {poll.final_results && (
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-gray-600 flex items-center gap-1">
+                            <BarChart3 className="w-3 h-3" />
                             ({poll.final_results.find(r => r.option === option.text)?.votes || 0} voturi)
                           </span>
                         )}
@@ -506,23 +571,31 @@ const SecurePolls = () => {
                   {/* Final results */}
                   {poll.final_results && (
                     <div className="mt-4 p-4 bg-gray-100 rounded">
-                      <h3 className="font-bold mb-2">Rezultate Finale:</h3>
+                      <h3 className="font-bold mb-2 flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4" />
+                        Rezultate Finale:
+                      </h3>
                       {poll.final_results.map((result, resIndex) => (
                         <div key={resIndex} className="flex justify-between">
                           <span>{result.option}</span>
-                          <span className="font-semibold">{result.votes} voturi</span>
+                          <span className="font-semibold flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {result.votes} voturi
+                          </span>
                         </div>
                       ))}
                     </div>
                   )}
                   
-                  {/* Export Cryptotexts Section - doar pentru sondaje închise */}
+                  {/* Export Cryptotexts Section */}
                   {!poll.is_active && (userIsAdmin || poll.creator_id === user.id) && (
                     <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                      <h4 className="font-bold text-purple-800 mb-3">
+                      <h4 className="font-bold text-purple-800 mb-3 flex items-center gap-2">
+                        <Download className="w-4 h-4" />
                         Export Cryptotexts 
                       </h4>
-                      <p className="text-sm text-purple-700 mb-3">
+                      <p className="text-sm text-purple-700 mb-3 flex items-center gap-2">
+                        <Shield className="w-3 h-3" />
                         Exportă cryptotextele pentru analiză criptografică sau audit de securitate.
                         Toate datele rămân anonime și criptate.
                       </p>
@@ -530,31 +603,31 @@ const SecurePolls = () => {
                       <div className="flex flex-wrap gap-3">
                         <button
                           onClick={() => downloadCryptotexts(poll._id, 'json')}
-                          className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 text-sm"
+                          className="flex items-center gap-2 bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 text-sm"
                         >
-                          📄 Download JSON
+                          <FileText className="w-4 h-4" />
+                          Download JSON
                         </button>
-                        
-                        {/* <button
-                          onClick={() => downloadCryptotexts(poll._id, 'csv')}
-                          className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 text-sm"
-                        >
-                          📊 Download CSV
-                        </button> */}
-                        
-                        {/* <button
-                          onClick={() => analyzeCryptotexts(poll._id)}
-                          className="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 text-sm"
-                        >
-                          🔬 Analiză Crypto
-                        </button> */}
                       </div>
                     </div>
                   )}
                   
                   {/* Debug info per poll */}
                   <div className="mt-4 text-xs text-gray-500 border-t pt-2">
-                    🔐 Criptat cu Paillier | 🔒 Semnături oarbe RSA | 🕵️ Anonim complet
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <Shield className="w-3 h-3" />
+                        Criptat cu Paillier
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Lock className="w-3 h-3" />
+                        Semnături oarbe RSA
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3 h-3" />
+                        Anonim complet
+                      </span>
+                    </div>
                     <br />
                     DEBUG: ID={poll._id} | Creator={poll.creator_username} | Active={poll.is_active}
                   </div>
@@ -568,45 +641,72 @@ const SecurePolls = () => {
       {/* Rezultate analiză cryptotexts */}
       {analysisResults && (
         <div className="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg">
-          <h3 className="text-xl font-bold mb-4">🔬 Rezultate Analiză Cryptotexts</h3>
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+            <Microscope className="w-5 h-5" />
+            Rezultate Analiză Cryptotexts
+          </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-white p-4 rounded-lg shadow">
-              <h4 className="font-bold text-gray-800">🛡️ Scor Anonimitate</h4>
+              <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Scor Anonimitate
+              </h4>
               <p className="text-2xl font-bold text-green-600">{analysisResults.security_metrics.anonymity_score}%</p>
               <p className="text-sm text-gray-600">Blind signatures garantează anonimitatea</p>
             </div>
             
             <div className="bg-white p-4 rounded-lg shadow">
-              <h4 className="font-bold text-gray-800">✅ Scor Integritate</h4>
+              <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Scor Integritate
+              </h4>
               <p className="text-2xl font-bold text-blue-600">{analysisResults.security_metrics.integrity_score}%</p>
               <p className="text-sm text-gray-600">Voturi cu ZK proofs</p>
             </div>
             
             <div className="bg-white p-4 rounded-lg shadow">
-              <h4 className="font-bold text-gray-800">🔍 Scor Verificabilitate</h4>
+              <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                <Eye className="w-4 h-4" />
+                Scor Verificabilitate
+              </h4>
               <p className="text-2xl font-bold text-purple-600">{analysisResults.security_metrics.verifiability_score}%</p>
               <p className="text-sm text-gray-600">Voturi cu semnături</p>
             </div>
           </div>
           
           <div className="bg-white p-4 rounded-lg shadow">
-            <h4 className="font-bold text-gray-800 mb-3">📊 Statistici Criptografice</h4>
+            <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Statistici Criptografice
+            </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
-                <span className="font-medium">Total voturi criptate:</span>
+                <span className="font-medium flex items-center gap-1">
+                  <Database className="w-3 h-3" />
+                  Total voturi criptate:
+                </span>
                 <p className="text-lg font-bold">{analysisResults.cryptographic_analysis.total_encrypted_votes}</p>
               </div>
               <div>
-                <span className="font-medium">Coverage ZK Proofs:</span>
+                <span className="font-medium flex items-center gap-1">
+                  <Zap className="w-3 h-3" />
+                  Coverage ZK Proofs:
+                </span>
                 <p className="text-lg font-bold">{analysisResults.cryptographic_analysis.zk_proof_coverage}%</p>
               </div>
               <div>
-                <span className="font-medium">Coverage Semnături:</span>
+                <span className="font-medium flex items-center gap-1">
+                  <Key className="w-3 h-3" />
+                  Coverage Semnături:
+                </span>
                 <p className="text-lg font-bold">{analysisResults.cryptographic_analysis.signature_coverage}%</p>
               </div>
               <div>
-                <span className="font-medium">Metoda Crypto:</span>
+                <span className="font-medium flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  Metoda Crypto:
+                </span>
                 <p className="text-sm">Paillier + RSA + ZKP</p>
               </div>
             </div>
@@ -614,20 +714,22 @@ const SecurePolls = () => {
           
           <button
             onClick={() => setAnalysisResults(null)}
-            className="mt-4 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+            className="mt-4 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 flex items-center gap-2"
           >
+            <X className="w-4 h-4" />
             Închide Analiza
           </button>
         </div>
       )}
 
-      {/* Tally local din fișier JSON - secțiune mutată mai sus */}
-
       {/* QR modal */}
       {qrPollId && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
           <div className="bg-white p-8 rounded-2xl shadow-2xl text-center w-full max-w-sm space-y-6">
-            <h3 className="text-2xl font-semibold text-gray-800">Scanează pentru a deschide sondajul</h3>
+            <h3 className="text-2xl font-semibold text-gray-800 flex items-center justify-center gap-2">
+              <Smartphone className="w-6 h-6" />
+              Scanează pentru a deschide sondajul
+            </h3>
             <QRCode 
               value={`${window.location.origin}/secure-polls/${qrPollId}`} 
               size={220}
@@ -635,8 +737,9 @@ const SecurePolls = () => {
             />
             <button
               onClick={() => setQrPollId(null)}
-              className="mt-4 bg-red-500 hover:bg-red-600 text-white font-medium px-6 py-2 rounded-lg transition-colors"
+              className="mt-4 bg-red-500 hover:bg-red-600 text-white font-medium px-6 py-2 rounded-lg transition-colors flex items-center gap-2 mx-auto"
             >
+              <X className="w-4 h-4" />
               Închide
             </button>
           </div>

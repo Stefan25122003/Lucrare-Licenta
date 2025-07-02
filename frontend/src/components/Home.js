@@ -127,7 +127,7 @@ const Home = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3">Creează Contul</h3>
               <p className="text-gray-600">
-                Înregistrează-te rapid și gratuit cu doar câteva clickuri.
+                Înregistrează-te rapid doar câteva clickuri.
               </p>
             </div>
             
@@ -149,9 +149,9 @@ const Home = () => {
               <div className="bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-purple-600">3</span>
               </div>
-              <h3 className="text-xl font-semibold mb-3">Partajează & Votează</h3>
+              <h3 className="text-xl font-semibold mb-3">Votează</h3>
               <p className="text-gray-600">
-                Distribuie link-ul și urmărește rezultatele în timp real.
+                Poti vota rapid și ușor, fără a-ți compromite anonimatul sau public, în funcție de sondajul ales.
               </p>
             </div>
           </div>
