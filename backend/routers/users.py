@@ -1,8 +1,6 @@
 from datetime import datetime, timezone
 import sys
 import os
-
-# Adaugă directorul backend în sys.path
 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
@@ -16,17 +14,14 @@ from .auth import get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-# ✅ HELPER: Funcție pentru normalizarea datetime-urilor
 def normalize_datetime(dt):
     """Convertește datetime la UTC timezone-aware"""
     if dt is None:
         return None
     if isinstance(dt, datetime):
         if dt.tzinfo is None:
-            # Dacă este naive, presupunem că este UTC
             return dt.replace(tzinfo=timezone.utc)
         else:
-            # Dacă are timezone, convertește la UTC
             return dt.astimezone(timezone.utc)
     return dt
 
@@ -35,8 +30,6 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
     """Get current user profile"""
     try:
         print(f"📋 Getting profile for user: {current_user.get('email')}")
-        
-        # ✅ FIXED: Normalizează datetime-ul
         created_at = normalize_datetime(current_user.get("created_at"))
         
         user_data = {
@@ -88,7 +81,7 @@ async def update_profile(
     
     return {"message": "Profile updated successfully"}
 
-@router.get("/{username}")  # ✅ FIXED: Elimină conflictul de rute
+@router.get("/{username}")
 async def get_user_profile(username: str, current_user: dict = Depends(get_current_user)):
     """Obține profilul unui utilizator"""
     try:
@@ -143,12 +136,10 @@ async def get_user_stats(username: str, current_user: dict = Depends(get_current
         
         user_id = user_doc["_id"]
         print(f"🔍 User ID: {user_id}")
-        
-        # Calculează statistici
+
         polls_created = await db.polls.count_documents({"created_by": user_id})
         votes_cast = await db.polls.count_documents({"voters": user_id})
-        
-        # Voturi primite pe sondajele utilizatorului
+
         user_polls = await db.polls.find({"created_by": user_id}).to_list(length=None)
         total_votes_received = sum(
             sum(option.get("votes", 0) for option in poll.get("options", []))
@@ -198,14 +189,12 @@ async def get_user_polls(username: str, current_user: dict = Depends(get_current
         
         user_id = user_doc["_id"]
         print(f"🔍 Looking for polls by user ID: {user_id}")
-        
-        # Găsește sondajele utilizatorului
+
         polls_cursor = db.polls.find({"created_by": user_id}).sort("created_at", -1)
         polls_docs = await polls_cursor.to_list(length=100)
         
         print(f"📋 Found {len(polls_docs)} polls for user {username}")
-        
-        # Transformă documentele
+
         from .polls import transform_poll_document
         polls = []
         for poll_doc in polls_docs:

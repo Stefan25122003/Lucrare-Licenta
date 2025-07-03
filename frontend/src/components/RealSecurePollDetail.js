@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import RealCryptoService from '../services/RealClientCryptoService';
+import { CheckCircle, XCircle, Loader, ArrowLeft, ShieldCheck, Lock, Key } from 'lucide-react'; // Import icons
 
 const RealSecurePollDetail = () => {
   const { pollId } = useParams();
@@ -97,12 +98,7 @@ const RealSecurePollDetail = () => {
       setHasVoted(response.data.has_voted);
       
       if (response.data.has_voted) {
-        setMessage(
-          '✅ Ai votat deja la acest sondaj securizat!\n' +
-          '🔐 Votul tău a fost înregistrat cu criptografie client-side\n' +
-          '🛡️ Identitatea ta rămâne complet anonimă\n' +
-          '📊 Poți vizualiza rezultatele când sondajul se încheie'
-        );
+        setMessage('✅ Ai votat deja la acest sondaj securizat!');
       }
       
     } catch (error) {
@@ -129,6 +125,11 @@ const RealSecurePollDetail = () => {
       return;
     }
 
+    if (!pollId) {
+      setMessage('❌ ID-ul sondajului este invalid');
+      return;
+    }
+
     if (votingToken) {
       setMessage('✅ Ai deja un token de vot valid generat pe client');
       return;
@@ -139,71 +140,15 @@ const RealSecurePollDetail = () => {
     setMessage('🔐 Se generează token-ul de vot anonim cu REAL client-side blind signatures...');
 
     try {
-      // FASE 1: Animație inițială de 2 secunde
-      const initialProgressInterval = setInterval(() => {
-        setTokenProgress(prev => {
-          if (prev >= 85) {
-            return 85; // Se oprește la 85%
-          }
-          return prev + Math.random() * 12 + 3; // Progres rapid până la 85%
-        });
-      }, 150);
-
-      // Așteaptă exact 2 secunde pentru animația inițială
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Oprește animația inițială
-      clearInterval(initialProgressInterval);
-      
       console.log('🎫 Generating REAL client-side anonymous voting token...');
-      
-      // FASE 2: Procesarea reală + finalizare progres
-      const finalProgressInterval = setInterval(() => {
-        setTokenProgress(prev => {
-          if (prev >= 95) {
-            clearInterval(finalProgressInterval);
-            return 95;
-          }
-          return prev + 2;
-        });
-      }, 100);
-      
-      // REAL client-side token generation
-      const token = await RealCryptoService.getAnonymousVotingToken(pollId);
-      
-      // Completează progresul la 100%
-      clearInterval(finalProgressInterval);
-      setTokenProgress(100);
-      
-      // Delay pentru a arăta completarea
-      setTimeout(() => {
-        setVotingToken(token);
-        setTokenProgress(0);
-        setMessage(
-          '✅ Token de vot anonim generat cu succes pe CLIENT-SIDE! \n' +
-          '🔒 Blinding și unblinding realizate în browser-ul tău \n' +
-          '🔐 Semnătura a fost verificată criptografic pe client \n' +
-          '🚫 Serverul nu a văzut niciodată mesajul original \n' +
-          '🗳️ Poți vota acum cu anonimitate completă!'
-        );
-      }, 500);
-      
-      console.log('✅ REAL client-side anonymous voting token generated');
-      
+      const token = await RealCryptoService.getAnonymousVotingToken(pollId, user.token); // Pass user token for authentication
+      setVotingToken(token);
+      setMessage('✅ Token de vot anonim generat cu succes!');
     } catch (error) {
-      setTokenProgress(0);
       console.error('❌ Error generating client-side voting token:', error);
-      
-      if (error.response?.status === 400) {
-        setMessage(`❌ ${error.response.data.detail || 'Nu se poate genera token-ul'}`);
-      } else if (error.response?.status === 401) {
-        setMessage('❌ Sesiunea a expirat. Te rog să te loghezi din nou.');
-        logout();
-      } else {
-        setMessage('❌ Eroare la generarea token-ului de vot pe client');
-      }
+      setMessage(error.response?.data?.detail || 'Eroare la generarea token-ului de vot pe client');
     } finally {
-      setTimeout(() => setGeneratingToken(false), 500);
+      setGeneratingToken(false);
     }
   };
 
@@ -341,12 +286,10 @@ const RealSecurePollDetail = () => {
   if (loading || checkingVoteStatus) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">
-            {loading ? 'Se încarcă sondajul cu REAL client-side crypto...' : 'Se verifică statusul votului...'}
-          </p>
-        </div>
+        <Loader className="animate-spin h-12 w-12 text-blue-500" />
+        <p className="text-gray-600 mt-4">
+          {loading ? 'Se încarcă sondajul...' : 'Se verifică statusul votului...'}
+        </p>
       </div>
     );
   }
@@ -354,17 +297,14 @@ const RealSecurePollDetail = () => {
   if (error) {
     return (
       <div className="container mx-auto p-4">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 flex items-center">
+          <XCircle className="h-6 w-6 mr-2" />
           {error}
         </div>
-        <div className="text-center">
-          <button 
-            onClick={() => navigate('/secure-polls')}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            ← Înapoi la Sondaje Securizate
-          </button>
-        </div>
+        <button onClick={() => navigate('/secure-polls')} className="flex items-center bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+          <ArrowLeft className="h-5 w-5 mr-2" />
+          Înapoi la Sondaje Securizate
+        </button>
       </div>
     );
   }
@@ -374,11 +314,9 @@ const RealSecurePollDetail = () => {
       <div className="container mx-auto p-4">
         <div className="text-center py-8">
           <p className="text-gray-600 mb-4">Sondajul nu a fost găsit</p>
-          <button 
-            onClick={() => navigate('/secure-polls')}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            ← Înapoi la Sondaje Securizate
+          <button onClick={() => navigate('/secure-polls')} className="flex items-center bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Înapoi la Sondaje Securizate
           </button>
         </div>
       </div>
@@ -387,74 +325,33 @@ const RealSecurePollDetail = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="mb-4">
-        <button 
-          onClick={() => navigate('/secure-polls')}
-          className="text-blue-600 hover:text-blue-800"
-        >
-          ← Înapoi la Sondaje Securizate
-        </button>
-      </div>
+      <button onClick={() => navigate('/secure-polls')} className="flex items-center text-blue-600 hover:text-blue-800 mb-4">
+        <ArrowLeft className="h-5 w-5 mr-2" />
+        Înapoi la Sondaje Securizate
+      </button>
 
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h1 className="text-3xl font-bold mb-4">🔐 {poll.title}</h1>
+        <h1 className="text-3xl font-bold mb-4 flex items-center">
+          <ShieldCheck className="h-6 w-6 mr-2 text-purple-500" />
+          {poll.title}
+        </h1>
+        <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
+          <span>
+            <Lock className="h-4 w-4 mr-1 inline text-gray-500" />
+            Creat: {new Date(poll.created_at).toLocaleDateString('ro-RO')}
+          </span>
+          {poll.end_date && (
+            <span>
+              <Key className="h-4 w-4 mr-1 inline text-gray-500" />
+              Încheiere: {new Date(poll.end_date).toLocaleString('ro-RO')}
+            </span>
+          )}
+          <span className={`px-2 py-1 rounded text-xs ${poll.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {poll.is_active ? '🟢 Activ' : '🔴 Închis'}
+          </span>
+        </div>
         
         <div className="mb-6">
-          <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
-            <span>📅 Creat: {new Date(poll.created_at).toLocaleDateString('ro-RO')}</span>
-            {poll.end_date && (
-              <span>⏰ Încheiere: {new Date(poll.end_date).toLocaleString('ro-RO')}</span>
-            )}
-            <span className={`px-2 py-1 rounded text-xs ${
-              poll.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-            }`}>
-              {poll.is_active ? '🟢 Activ' : '🔴 Închis'}
-            </span>
-            <span className="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">
-              🚀 REAL Client-Side Crypto
-            </span>
-          </div>
-          
-          <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500 mb-4">
-            <p className="text-sm text-blue-800">
-              🔐 <strong>REAL Client-Side Votare Securizată:</strong> Acest sondaj folosește 
-              <strong> adevărată criptografie client-side</strong> cu criptare Paillier în browser, 
-              semnături oarbe RSA reale și Zero-Knowledge Proofs pentru 
-              a garanta că <strong>serverul nu vede niciodată plaintext-ul voturilor tale</strong>.
-            </p>
-          </div>
-
-          {/* REAL crypto status */}
-          {cryptoStatus && (
-            <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500 mb-4">
-              <h3 className="font-semibold text-green-800 mb-2">🔧 Status Sistem Criptografic REAL Client-Side:</h3>
-              <ul className="text-sm text-green-700 space-y-1">
-                <li>✅ <strong>Criptare:</strong> {cryptoStatus.client_side_encryption ? 'Client-Side Paillier' : 'Nu inițializat'}</li>
-                <li>✅ <strong>Anonimizare:</strong> {cryptoStatus.client_side_blind_signatures ? 'Client-Side RSA Blind Sigs' : 'Nu inițializat'}</li>
-                <li>✅ <strong>Dovezi:</strong> {cryptoStatus.client_side_zk_proofs ? 'Client-Side ZK Proofs' : 'Nu inițializat'}</li>
-                <li>🔑 <strong>Inițializat:</strong> {cryptoStatus.initialized ? 'Da' : 'Nu'}</li>
-                <li>🚀 <strong>Features:</strong> {cryptoStatus.features ? cryptoStatus.features.join(', ') : 'Loading...'}</li>
-              </ul>
-              
-              <div className="mt-3 text-xs text-green-600">
-                <strong>🛡️ Garanții de Securitate:</strong>
-                <ul className="mt-1 space-y-1">
-                  {cryptoStatus.security_guarantees && cryptoStatus.security_guarantees.map((guarantee, index) => (
-                    <li key={index}>• {guarantee}</li>
-                  ))}
-                </ul>
-              </div>
-              
-              <div className="mt-3 flex space-x-2">
-                <button
-                  onClick={testClientSideCrypto}
-                  className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
-                >
-                  🧪 Test Client-Side Crypto
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Client crypto test results */}
           {clientCryptoTest && (
@@ -494,7 +391,7 @@ const RealSecurePollDetail = () => {
           <div className="space-y-6">
             {/* Afișează mesaj dacă utilizatorul a votat deja */}
             {hasVoted ? (
-              <div className="bg-green-50 p-6 rounded-lg border-l-4 border-green-500">
+              <div className="bg-green-50 p-6 rounded-lg border-4 border-green-500">
                 <h2 className="text-xl font-semibold mb-4 text-green-800">
                   ✅ Ai votat deja la acest sondaj
                 </h2>
@@ -521,19 +418,11 @@ const RealSecurePollDetail = () => {
                 {!votingToken ? (
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h2 className="text-xl font-semibold mb-4">
-                      Obține o semnătură care îți validează votul
+                      Primul pas: Obține o semnătură care îți validează votul
                     </h2>
                     <p className="text-gray-700 mb-4">
                       Pentru a vota anonim, trebuie mai intai sa faci rost de un buletin de vot semnat de autoritatea centrala.
                     </p>
-                    <div className="bg-blue-50 p-3 rounded mb-4 text-sm text-blue-800">
-                      <strong>🔬 Proces tehnic CLIENT-SIDE:</strong>
-                      <br />1. Message generation în browser
-                      <br />2. Client-side RSA blinding cu forge.js
-                      <br />3. Server blind signing (fără acces la mesaj)
-                      <br />4. Client-side unblinding în browser
-                      <br />5. Client-side signature verification
-                    </div>
                     <button
                       onClick={generateClientSideVotingToken}
                       disabled={generatingToken}
@@ -678,68 +567,7 @@ const RealSecurePollDetail = () => {
           </div>
         )}
 
-        {/* Technical details about REAL client-side implementation */}
-        <div className="mt-8 p-4 bg-gray-100 rounded-lg">
-          <h3 className="font-semibold mb-4">🔬 REAL Client-Side Crypto Implementation:</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <h4 className="font-semibold mb-2">🔐 Client-Side Paillier:</h4>
-              <ul className="text-gray-700 space-y-1">
-                <li>• forge.js BigInteger pentru operații mari</li>
-                <li>• Client generează random r pentru criptare</li>
-                <li>• Ciphertext = g^m * r^n mod n²</li>
-                <li>• Homomorphic addition pe client dacă necesar</li>
-                <li>• Server nu vede niciodată m (plaintext)</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">🔒 Client-Side RSA Blind Signatures:</h4>
-              <ul className="text-gray-700 space-y-1">
-                <li>• Message hashing cu forge.md.sha256</li>
-                <li>• Client-side blinding: m * r^e mod n</li>
-                <li>• Server signs fără să vadă m</li>
-                <li>• Client-side unblinding: sig * r^(-1) mod n</li>
-                <li>• Client verification: sig^e ≟ hash(m) mod n</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">🕵️ Client-Side Zero-Knowledge:</h4>
-              <ul className="text-gray-700 space-y-1">
-                <li>• Σ-protocols pentru binary proofs</li>
-                <li>• Commitments generate pe client</li>
-                <li>• Fiat-Shamir pentru non-interactivity</li>
-                <li>• Challenge calculation cu SHA-256</li>
-                <li>• Responses calculate pe client</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">🛡️ Client-Side Security:</h4>
-              <ul className="text-gray-700 space-y-1">
-                <li>• Toate operațiile crypto în browser</li>
-                <li>• forge.js pentru crypto primitives</li>
-                <li>• Private keys nu părăsesc clientul</li>
-                <li>• Server = untrusted computation node</li>
-                <li>• Zero-trust security model</li>
-              </ul>
-            </div>
-          </div>
-          
-          {/* Debug info pentru development */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
-              <strong>🚀 Client-Side Debug Info:</strong>
-              <br />Poll ID: {poll._id}
-              <br />User Has Voted: {hasVoted ? 'YES' : 'NO'}
-              <br />Checking Vote Status: {checkingVoteStatus ? 'YES' : 'NO'}
-              <br />Client-Side Encryption: {cryptoStatus?.client_side_encryption ? 'YES' : 'NO'}
-              <br />Client-Side Blind Sigs: {cryptoStatus?.client_side_blind_signatures ? 'YES' : 'NO'}
-              <br />Client-Side ZKP: {cryptoStatus?.client_side_zk_proofs ? 'YES' : 'NO'}
-              <br />Has Token: {!!votingToken}
-              <br />Token Verified: {votingToken?.client_verified ? 'YES' : 'NO'}
-              <br />Crypto Initialized: {cryptoStatus?.initialized ? 'YES' : 'NO'}
-            </div>
-          )}
-        </div>
+        
       </div>
     </div>
   );

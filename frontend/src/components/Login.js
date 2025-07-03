@@ -5,7 +5,7 @@ import axios from 'axios';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    email: '',  // ✅ FIX: Schimbat de la username la email
+    email: '',  
     password: ''
   });
   const [error, setError] = useState('');
@@ -29,7 +29,7 @@ const Login = () => {
       console.log('Sending login data:', formData);
       
       const response = await axios.post('http://localhost:5000/auth/login', {
-        email: formData.email.trim(),  // ✅ FIX: Trimite email
+        email: formData.email.trim(),  
         password: formData.password
       }, {
         headers: {
@@ -40,13 +40,13 @@ const Login = () => {
       console.log('Login response:', response.data);
 
       if (response.data.access_token) {
-        // Salvează token-ul
+        
         localStorage.setItem('token', response.data.access_token);
         
-        // Actualizează contextul
+       
         await login(response.data.access_token);
         
-        // Redirect la polls
+        
         navigate('/polls');
       } else {
         setError('Invalid response from server');
@@ -87,13 +87,13 @@ const Login = () => {
             <div>
               <input
                 id="email"
-                name="email"  // ✅ FIX: Schimbat la email
-                type="email"  // ✅ FIX: Type email
+                name="email"  
+                type="email"  
                 required
                 value={formData.email}
                 onChange={handleChange}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email"  // ✅ FIX: Placeholder email
+                placeholder="Email"  
               />
             </div>
             <div>

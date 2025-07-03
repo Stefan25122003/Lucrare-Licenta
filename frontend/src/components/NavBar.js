@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-// ✅ FIX: Importă logo-ul
 import logo from '../assets/images/logo.png';
 
 const Navbar = () => {
@@ -41,7 +40,6 @@ const Navbar = () => {
     <nav className="bg-white shadow-lg border-b border-gray-200 fixed w-full top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo cu PNG */}
           <div className="flex-shrink-0 flex items-center">
             <Link 
               to="/" 
@@ -56,7 +54,6 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
             <Link to="/" className={navLinkClass('/')}>
               Acasă
@@ -68,20 +65,17 @@ const Navbar = () => {
               </Link>
             )}
             
-            {/* ✅ FIX: Toți utilizatorii autentificați pot vedea sondajele securizate */}
             {user && (
               <Link to="/secure-polls" className={navLinkClass('/secure-polls')}>
                 Sondaje Securizate
               </Link>
             )}
 
-            {/* Nou: Link către pagina Proces de votare */}
             <Link to="/voting-process" className={navLinkClass('/voting-process')}>
               Proces de votare
             </Link>
           </div>
 
-          {/* Desktop User Menu */}
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
@@ -137,7 +131,6 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile menu button */}
           <div className="md:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -159,7 +152,6 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-200 shadow-lg">
           <div className="px-2 pt-2 pb-3 space-y-1">
@@ -181,7 +173,6 @@ const Navbar = () => {
               </Link>
             )}
             
-            {/* ✅ FIX: Sondaje securizate vizibile pentru toți utilizatorii autentificați în mobile */}
             {user && (
               <Link 
                 to="/secure-polls" 
@@ -192,7 +183,6 @@ const Navbar = () => {
               </Link>
             )}
 
-            {/* Nou: Link către pagina Proces de votare în meniul mobil */}
             <Link 
               to="/voting-process" 
               className={mobileNavLinkClass('/voting-process')}

@@ -76,7 +76,12 @@ const VotingProcess = () => {
           {steps.map(({ id, icon: Icon, title, description, color }) => (
             <div
               key={id}
-              className={`flex flex-col md:flex-row items-start space-x-0 md:space-x-4 rounded-xl p-6 shadow-md border-l-4 border-${color}-500 bg-${color}-50`}
+              className={
+                `flex flex-col md:flex-row items-start space-x-0 md:space-x-4 rounded-xl p-6 shadow-md ` +
+                (color === 'orange'
+                  ? 'border-4 border-orange-500 bg-orange-50'
+                  : `border-4 border-${color}-500 bg-${color}-50`)
+              }
             >
               <div className="flex-shrink-0 bg-white rounded-full p-4 shadow mb-4 md:mb-0">
                 <Icon className={`w-10 h-10 text-${color}-600`} />

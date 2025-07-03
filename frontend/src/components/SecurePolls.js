@@ -177,7 +177,7 @@ const SecurePolls = () => {
       });
       
       console.log('✅ Poll closed:', response.data);
-      setMessage('✅ Sondaj închis și rezultate calculate cu succes!');
+      setMessage('Sondaj închis și rezultate calculate cu succes!');
       
       await fetchSecurePolls();
       
@@ -297,7 +297,7 @@ const SecurePolls = () => {
         </button>
       </div>
       
-      {/* Debug info - Enhanced */}
+      {/* Debug info - Enhanced
       <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-sm">
         <div className="flex items-center gap-2 mb-2">
           <Settings className="w-4 h-4" />
@@ -329,7 +329,7 @@ const SecurePolls = () => {
             <span>Loading: {fetchLoading ? 'Da' : 'Nu'}</span>
           </div>
         </div>
-      </div>
+      </div> */}
       
       {message && (
         <div className={`mb-4 p-3 rounded flex items-center gap-2 ${
@@ -485,7 +485,7 @@ const SecurePolls = () => {
               }
 
               return (
-                <div key={poll._id} className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+                <div key={poll._id} className="bg-white p-6 rounded-lg shadow-md border-4 border-blue-500">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h2 className="text-xl font-bold mb-2 flex items-center gap-2">

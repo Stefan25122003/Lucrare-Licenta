@@ -1,4 +1,3 @@
-# routers/polls.py - FIXED cu transformarea corectă a datelor
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from models import PollCreate, PollResponse, VoteRequest, MessageResponse, PollStatistics, UserVoteStats, DemographicBreakdown, PollAnalytics
@@ -9,43 +8,13 @@ from .auth import get_current_user
 from collections import defaultdict, Counter
 
 router = APIRouter(prefix="/polls", tags=["polls"])
-
-# async def transform_poll_document(poll_doc, db):
-#     """Transformă un document din MongoDB în PollResponse"""
-#     if not poll_doc:
-#         return None
-    
-#     # Găsește username-ul creatorului
-#     creator = await db.users.find_one({"_id": ObjectId(poll_doc["created_by"])})
-#     creator_username = creator["username"] if creator else "Unknown"
-    
-#     # Calculează total voturi
-#     total_votes = sum(option.get("votes", 0) for option in poll_doc.get("options", []))
-    
-#     return PollResponse(
-#         id=str(poll_doc["_id"]),
-#         title=poll_doc["title"],
-#         options=poll_doc.get("options", []),
-#         creator_id=str(poll_doc["created_by"]),
-#         creator_username=creator_username,
-#         created_at=poll_doc["created_at"],
-#         end_date=poll_doc.get("end_date"),
-#         is_active=poll_doc.get("is_active", True),
-#         total_votes=total_votes
-#     )
 async def transform_poll_document(poll_doc, db, current_user_id=None):
     """Transformă un document din MongoDB în PollResponse"""
     if not poll_doc:
         return None
-    
-    # Găsește username-ul creatorului
     creator = await db.users.find_one({"_id": ObjectId(poll_doc["created_by"])})
     creator_username = creator["username"] if creator else "Unknown"
-    
-    # Calculează total voturi
     total_votes = sum(option.get("votes", 0) for option in poll_doc.get("options", []))
-    
-    # Verifică dacă utilizatorul curent a votat
     user_has_voted = False
     if current_user_id:
         user_has_voted = ObjectId(current_user_id) in poll_doc.get("voters", [])
@@ -68,13 +37,9 @@ async def get_polls():
     """Obține toate sondajele active"""
     try:
         db = await get_database()
-        
-        # Găsește toate sondajele active
-        # polls_cursor = db.polls.find({"is_active": True}).sort("created_at", -1)
         polls_cursor = db.polls.find({}).sort("created_at", -1)
         polls_docs = await polls_cursor.to_list(length=100)
         
-        # Transformă fiecare document
         polls = []
         for poll_doc in polls_docs:
             transformed_poll = await transform_poll_document(poll_doc, db)
@@ -97,7 +62,6 @@ async def get_poll(poll_id: str):
     try:
         db = await get_database()
         
-        # Validează ObjectId
         if not ObjectId.is_valid(poll_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -129,8 +93,6 @@ async def create_poll(poll_data: PollCreate, current_user: dict = Depends(get_cu
     """Creează un sondaj nou"""
     try:
         db = await get_database()
-        
-        # Validează datele
         if not poll_data.title.strip():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -143,7 +105,6 @@ async def create_poll(poll_data: PollCreate, current_user: dict = Depends(get_cu
                 detail="Sunt necesare cel puțin 2 opțiuni"
             )
         
-        # Verifică opțiunile duplicate
         unique_options = list(set(opt.strip() for opt in poll_data.options if opt.strip()))
         if len(unique_options) < 2:
             raise HTTPException(
@@ -151,10 +112,7 @@ async def create_poll(poll_data: PollCreate, current_user: dict = Depends(get_cu
                 detail="Trebuie să ai cel puțin 2 opțiuni unice"
             )
         
-        # Creează structura pentru opțiuni
         options = [{"text": opt, "votes": 0} for opt in unique_options]
-        
-        # Document pentru MongoDB
         poll_doc = {
             "title": poll_data.title.strip(),
             "options": options,
@@ -162,13 +120,11 @@ async def create_poll(poll_data: PollCreate, current_user: dict = Depends(get_cu
             "created_at": datetime.utcnow(),
             "end_date": poll_data.end_date,
             "is_active": True,
-            "voters": []  # Lista utilizatorilor care au votat
+            "voters": []  
         }
         
-        # Inserează în baza de date
         result = await db.polls.insert_one(poll_doc)
-        
-        # Returnează sondajul creat
+
         created_poll_doc = await db.polls.find_one({"_id": result.inserted_id})
         poll = await transform_poll_document(created_poll_doc, db)
         
@@ -190,7 +146,6 @@ async def vote_on_poll(poll_id: str, vote_data: VoteRequest, current_user: dict 
     try:
         db = await get_database()
         
-        # Validează ObjectId
         if not ObjectId.is_valid(poll_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -205,14 +160,12 @@ async def vote_on_poll(poll_id: str, vote_data: VoteRequest, current_user: dict 
                 detail="Sondajul nu a fost găsit"
             )
         
-        # Verifică dacă sondajul este activ
         if not poll_doc.get("is_active", True):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Acest sondaj nu mai este activ"
             )
         
-        # Verifică dacă utilizatorul a votat deja
         user_id = ObjectId(current_user["_id"])
         if user_id in poll_doc.get("voters", []):
             raise HTTPException(
@@ -220,14 +173,13 @@ async def vote_on_poll(poll_id: str, vote_data: VoteRequest, current_user: dict 
                 detail="Ai votat deja în acest sondaj"
             )
         
-        # Validează index-ul opțiunii
         if vote_data.option_index < 0 or vote_data.option_index >= len(poll_doc["options"]):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Opțiunea selectată este invalidă"
             )
         
-        # Actualizează votul și adaugă utilizatorul la lista de votanți
+        
         await db.polls.update_one(
             {"_id": ObjectId(poll_id)},
             {
@@ -255,7 +207,7 @@ async def delete_poll(poll_id: str, current_user: dict = Depends(get_current_use
     try:
         db = await get_database()
         
-        # Validează ObjectId
+        
         if not ObjectId.is_valid(poll_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -270,7 +222,6 @@ async def delete_poll(poll_id: str, current_user: dict = Depends(get_current_use
                 detail="Sondajul nu a fost găsit"
             )
         
-        # Verifică permisiunile (creator sau admin)
         user_id = ObjectId(current_user["_id"])
         is_creator = poll_doc["created_by"] == user_id
         is_admin = current_user.get("is_admin", False)
@@ -281,7 +232,6 @@ async def delete_poll(poll_id: str, current_user: dict = Depends(get_current_use
                 detail="Nu ai permisiunea să ștergi acest sondaj"
             )
         
-        # Șterge sondajul
         await db.polls.delete_one({"_id": ObjectId(poll_id)})
         
         print(f"✅ Poll deleted: {poll_doc['title']} by {current_user['username']}")
@@ -303,7 +253,6 @@ async def close_poll(poll_id: str, current_user: dict = Depends(get_current_user
     try:
         db = await get_database()
         
-        # Validează ObjectId
         if not ObjectId.is_valid(poll_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -318,7 +267,6 @@ async def close_poll(poll_id: str, current_user: dict = Depends(get_current_user
                 detail="Sondajul nu a fost găsit"
             )
         
-        # Verifică permisiunile (creator sau admin)
         user_id = ObjectId(current_user["_id"])
         is_creator = poll_doc["created_by"] == user_id
         is_admin = current_user.get("is_admin", False)
@@ -329,7 +277,6 @@ async def close_poll(poll_id: str, current_user: dict = Depends(get_current_user
                 detail="Nu ai permisiunea să închizi acest sondaj"
             )
         
-        # Închide sondajul
         await db.polls.update_one(
             {"_id": ObjectId(poll_id)},
             {"$set": {"is_active": False}}
@@ -354,7 +301,6 @@ async def calculate_poll_statistics(poll_doc, db):
         poll_id = str(poll_doc["_id"])
         voters = poll_doc.get("voters", [])
         
-        # Obține informații complete despre votanți
         user_votes = []
         demographic_data = {
             "ages": [],
@@ -363,12 +309,10 @@ async def calculate_poll_statistics(poll_doc, db):
             "city_counts": defaultdict(int)
         }
         
-        # Pentru fiecare votant, găsește detaliile și opțiunea votată
         for i, voter_id in enumerate(voters):
             user = await db.users.find_one({"_id": voter_id})
             if user:
-                # Găsește ce opțiune a votat (prin ordinea în care a votat)
-                vote_option_index = i % len(poll_doc["options"])  # Simplificat - în realitate ai nevoie de o structură mai bună
+                vote_option_index = i % len(poll_doc["options"])  
                 
                 user_vote = UserVoteStats(
                     user_id=str(user["_id"]),
@@ -379,16 +323,14 @@ async def calculate_poll_statistics(poll_doc, db):
                     age=user.get("age"),
                     vote_option_index=vote_option_index,
                     vote_option_text=poll_doc["options"][vote_option_index]["text"],
-                    voted_at=poll_doc.get("created_at", datetime.utcnow())  # Simplificat
+                    voted_at=poll_doc.get("created_at", datetime.utcnow())  
                 )
                 user_votes.append(user_vote)
                 
-                # Colectează date demografice
                 if user.get("age"):
                     age = user["age"]
                     demographic_data["ages"].append(age)
                     
-                    # Grupuri de vârstă
                     if age < 18:
                         demographic_data["age_groups"]["<18"] += 1
                     elif age < 25:
@@ -405,7 +347,6 @@ async def calculate_poll_statistics(poll_doc, db):
                     demographic_data["cities"].append(city)
                     demographic_data["city_counts"][city] += 1
         
-        # Calculează distribuția voturilor
         vote_distribution = []
         for i, option in enumerate(poll_doc["options"]):
             vote_distribution.append({
@@ -415,7 +356,6 @@ async def calculate_poll_statistics(poll_doc, db):
                 "percentage": (option["votes"] / max(1, len(voters))) * 100
             })
         
-        # Statistici demografice
         total_votes = len(voters)
         demographic_stats = {
             "total_votes": total_votes,
@@ -428,11 +368,10 @@ async def calculate_poll_statistics(poll_doc, db):
             "most_active_city": max(demographic_data["city_counts"].items(), key=lambda x: x[1])[0] if demographic_data["city_counts"] else "N/A"
         }
         
-        # Engagement metrics
         engagement_metrics = {
-            "participation_rate": (total_votes / 100) * 100,  # Placeholder - ai nevoie de total utilizatori activi
-            "completion_rate": 100.0,  # Pentru sondaje simple e 100%
-            "average_time_to_vote": "Instantan",  # Placeholder
+            "participation_rate": (total_votes / 100) * 100, 
+            "completion_rate": 100.0,  
+            "average_time_to_vote": "Instantan", 
             "most_popular_option": max(poll_doc["options"], key=lambda x: x["votes"])["text"] if poll_doc["options"] else "N/A"
         }
         
@@ -444,7 +383,7 @@ async def calculate_poll_statistics(poll_doc, db):
             demographic_stats=demographic_stats,
             city_distribution=dict(demographic_data["city_counts"]),
             age_distribution=dict(demographic_data["age_groups"]),
-            voting_timeline=[],  # Placeholder - ai nevoie de timestamp-uri pentru voturi
+            voting_timeline=[],  
             engagement_metrics=engagement_metrics
         )
         
@@ -460,7 +399,6 @@ async def get_poll_statistics(poll_id: str, current_user: dict = Depends(get_cur
     try:
         db = await get_database()
         
-        # Validează ObjectId
         if not ObjectId.is_valid(poll_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -474,8 +412,7 @@ async def get_poll_statistics(poll_id: str, current_user: dict = Depends(get_cur
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Sondajul nu a fost găsit"
             )
-        
-        # Verifică permisiunile (creator sau admin)
+
         user_id = ObjectId(current_user["_id"])
         is_creator = poll_doc["created_by"] == user_id
         is_admin = current_user.get("is_admin", False)
@@ -485,11 +422,9 @@ async def get_poll_statistics(poll_id: str, current_user: dict = Depends(get_cur
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Nu ai permisiunea să vezi statisticile acestui sondaj"
             )
-        
-        # Obține informații despre sondaj
+
         poll_info = await transform_poll_document(poll_doc, db)
-        
-        # Calculează statistici
+
         statistics, user_votes = await calculate_poll_statistics(poll_doc, db)
         
         if not statistics:
@@ -497,8 +432,7 @@ async def get_poll_statistics(poll_id: str, current_user: dict = Depends(get_cur
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Eroare la calcularea statisticilor"
             )
-        
-        # Generează breakdown demografic pe opțiuni
+
         demographic_breakdown = []
         for i, option in enumerate(poll_doc["options"]):
             option_voters = [uv for uv in user_votes if uv.vote_option_index == i]
@@ -529,11 +463,10 @@ async def get_poll_statistics(poll_id: str, current_user: dict = Depends(get_cur
                 percentage=(option["votes"] / max(1, statistics.total_votes)) * 100,
                 age_groups=dict(age_groups),
                 cities=dict(cities),
-                gender_distribution={}  # Placeholder
+                gender_distribution={}
             )
             demographic_breakdown.append(breakdown)
-        
-        # Generează insights automate
+
         insights = generate_poll_insights(statistics, demographic_breakdown)
         
         analytics = PollAnalytics(
@@ -561,36 +494,24 @@ def generate_poll_insights(statistics: PollStatistics, breakdown: List[Demograph
     insights = []
     
     try:
-        # Insight despre participare
         if statistics.total_votes > 0:
             insights.append(f"🗳️ Sondajul a primit {statistics.total_votes} voturi în total")
-        
-        # Insight despre opțiunea câștigătoare
         if statistics.vote_distribution:
             winner = max(statistics.vote_distribution, key=lambda x: x["votes"])
             insights.append(f"🏆 Opțiunea '{winner['option_text']}' conduce cu {winner['percentage']:.1f}% din voturi")
-        
-        # Insight despre vârstă
         if statistics.demographic_stats.get("average_age", 0) > 0:
             avg_age = statistics.demographic_stats["average_age"]
             insights.append(f"👥 Vârsta medie a votanților este {avg_age:.1f} ani")
         
-        # Insight despre orașe
         if statistics.demographic_stats.get("most_active_city") != "N/A":
             city = statistics.demographic_stats["most_active_city"]
             insights.append(f"🏙️ Cel mai activ oraș în votare este {city}")
-        
-        # Insight despre distribuția pe vârste
         if statistics.age_distribution:
             dominant_age_group = max(statistics.age_distribution.items(), key=lambda x: x[1])
             insights.append(f"📊 Grupa de vârstă dominantă este {dominant_age_group[0]} cu {dominant_age_group[1]} voturi")
-        
-        # Insight despre diversitate geografică
         unique_cities = statistics.demographic_stats.get("unique_cities", 0)
         if unique_cities > 1:
             insights.append(f"🌍 Votanții provin din {unique_cities} orașe diferite")
-        
-        # Insights despre preferințele demografice
         for option_breakdown in breakdown:
             if option_breakdown.votes > 0:
                 dominant_city = max(option_breakdown.cities.items(), key=lambda x: x[1])[0] if option_breakdown.cities else None
@@ -615,16 +536,13 @@ async def get_poll_demographics(poll_id: str, current_user: dict = Depends(get_c
         poll_doc = await db.polls.find_one({"_id": ObjectId(poll_id)})
         if not poll_doc:
             raise HTTPException(status_code=404, detail="Sondaj negăsit")
-        
-        # Verifică permisiuni
         user_id = ObjectId(current_user["_id"])
         is_creator = poll_doc["created_by"] == user_id
         is_admin = current_user.get("is_admin", False)
         
         if not (is_creator or is_admin):
             raise HTTPException(status_code=403, detail="Fără permisiuni")
-        
-        # Colectează demografii simple
+
         voters = poll_doc.get("voters", [])
         demographics = {
             "total_votes": len(voters),

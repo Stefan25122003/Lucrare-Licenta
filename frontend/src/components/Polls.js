@@ -1,4 +1,3 @@
-// Polls.js - FIXED cu URL-uri și API calls corecte
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -32,23 +31,20 @@ const Polls = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   
-  // ✅ ENHANCED: State pentru filtre avansate
   const [filters, setFilters] = useState({
-    status: 'active', // 'active', 'closed', 'all'
-    sortBy: 'newest', // 'newest', 'oldest', 'most_votes', 'least_votes', 'title'
+    status: 'active', 
+    sortBy: 'newest', 
     searchTerm: '',
-    createdBy: 'all', // 'all', 'me', 'others'
+    createdBy: 'all', 
     minVotes: '',
     maxVotes: '',
-    dateRange: 'all' // 'all', 'today', 'week', 'month'
+    dateRange: 'all'
   });
   
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
-  // ✅ NEW: State pentru afișarea/ascunderea formularului de creare
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // Configurez axios cu token
   const apiCall = axios.create({
     baseURL: 'http://localhost:5000',
     headers: {
@@ -65,12 +61,10 @@ const Polls = () => {
       const response = await axios.get('http://localhost:5000/polls/');
       setPolls(response.data);
       
-      // ✅ DEBUG: Verifică statusul sondajelor
       console.log('📊 Polls fetched:', response.data);
       console.log('🟢 Active polls:', response.data.filter(p => p.is_active).length);
       console.log('🔴 Closed polls:', response.data.filter(p => !p.is_active).length);
       
-      // ✅ DEBUG: Afișează primul sondaj pentru a vedea structura
       if (response.data.length > 0) {
         console.log('📋 Sample poll structure:', response.data[0]);
       }
@@ -81,7 +75,6 @@ const Polls = () => {
     }
   };
 
-  // Asigură-te că funcția handleVote primește corect pollId
   const handleVote = async (pollId, optionIndex) => {
     if (!pollId || pollId === 'undefined') {
       console.error('Poll ID is missing or undefined');
@@ -106,8 +99,6 @@ const Polls = () => {
         }
       );
       
-      //setMessage('✅ Vot înregistrat cu succes!');
-      // Refresh polls data
       fetchPolls();
     } catch (error) {
       console.error('Error voting:', error);
@@ -126,7 +117,6 @@ const Polls = () => {
     setLoading(true);
     
     try {
-      // ✅ FIXED: payload fără userId (backend ia user-ul din token)
       const response = await apiCall.post('/polls/', {
         title: newPoll.title,
         options: newPoll.options.filter(opt => opt.trim() !== '')
@@ -156,17 +146,13 @@ const Polls = () => {
     }
   };
 
-  // ✅ FIX: Corectează funcția hasUserVoted pentru a permite afișarea statisticilor
   const hasUserVoted = (poll) => {
-    // Pentru sondajele închise, permite tuturor să vadă statisticile
     if (!poll.is_active) {
-      return false; // Permite afișarea butonului de statistici
+      return false;
     }
-    // Pentru sondajele active, verifică dacă user-ul a votat (implementare viitoare)
     return poll.user_has_voted || false;
   };
 
-  // ✅ FIX: Modifică renderPollOption pentru sondajele închise
   const renderPollOption = (poll, option, index) => {
     const totalVotes = poll.total_votes || poll.options.reduce((sum, opt) => sum + opt.votes, 0);
     const percentage = totalVotes > 0 ? (option.votes / totalVotes * 100) : 0;
@@ -213,25 +199,19 @@ const Polls = () => {
     );
   };
 
-  // ✅ NEW: Funcție pentru aplicarea filtrelor
+
   const getFilteredAndSortedPolls = () => {
     let filtered = [...polls];
-
-    // Filtru după status
     if (filters.status === 'active') {
       filtered = filtered.filter(poll => poll.is_active);
     } else if (filters.status === 'closed') {
       filtered = filtered.filter(poll => !poll.is_active);
     }
-
-    // Filtru după creator
     if (filters.createdBy === 'me') {
       filtered = filtered.filter(poll => poll.created_by === user?.id);
     } else if (filters.createdBy === 'others') {
       filtered = filtered.filter(poll => poll.created_by !== user?.id);
     }
-
-    // Filtru după text de căutare
     if (filters.searchTerm.trim()) {
       const searchLower = filters.searchTerm.toLowerCase();
       filtered = filtered.filter(poll => 
@@ -241,15 +221,13 @@ const Polls = () => {
       );
     }
 
-    // Filtru după numărul de voturi
+
     if (filters.minVotes) {
       filtered = filtered.filter(poll => poll.total_votes >= parseInt(filters.minVotes));
     }
     if (filters.maxVotes) {
       filtered = filtered.filter(poll => poll.total_votes <= parseInt(filters.maxVotes));
     }
-
-    // Filtru după perioada de timp
     if (filters.dateRange !== 'all') {
       const now = new Date();
       const pollDate = new Date();
@@ -271,8 +249,6 @@ const Polls = () => {
         }
       });
     }
-
-    // Sortare
     filtered.sort((a, b) => {
       switch (filters.sortBy) {
         case 'newest':
@@ -293,7 +269,6 @@ const Polls = () => {
     return filtered;
   };
 
-  // ✅ NEW: Reset filtre
   const resetFilters = () => {
     setFilters({
       status: 'active',
@@ -305,8 +280,6 @@ const Polls = () => {
       dateRange: 'all'
     });
   };
-
-  // ✅ NEW: Handler pentru schimbarea filtrelor
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
       ...prev,
@@ -314,7 +287,6 @@ const Polls = () => {
     }));
   };
 
-  // Obține sondajele filtrate
   const filteredPolls = getFilteredAndSortedPolls();
 
   return (
@@ -329,11 +301,8 @@ const Polls = () => {
           {message}
         </div>
       )}
-
-      {/* ✅ NEW: Secțiunea de filtre */}
       <div className="mb-6 bg-white rounded-lg shadow-md p-4">
         <div className="flex flex-wrap items-center gap-4 mb-4">
-          {/* Căutare */}
           <div className="flex-1 min-w-64 relative">
             <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
@@ -344,8 +313,6 @@ const Polls = () => {
               className="w-full p-2 pl-10 border rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
-          {/* Status */}
           <select
             value={filters.status}
             onChange={(e) => handleFilterChange('status', e.target.value)}
@@ -355,8 +322,6 @@ const Polls = () => {
             <option value="closed">🔴 Închise</option>
             <option value="all">📊 Toate</option>
           </select>
-
-          {/* Sortare */}
           <select
             value={filters.sortBy}
             onChange={(e) => handleFilterChange('sortBy', e.target.value)}
@@ -368,8 +333,6 @@ const Polls = () => {
             <option value="least_votes">📉 Cele mai puțin votate</option>
             <option value="title">🔤 Alfabetic</option>
           </select>
-
-          {/* Toggle filtre avansate */}
           <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-2"
@@ -386,8 +349,6 @@ const Polls = () => {
               </>
             )}
           </button>
-
-          {/* Reset */}
           <button
             onClick={resetFilters}
             className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
@@ -396,13 +357,10 @@ const Polls = () => {
             Reset
           </button>
         </div>
-
-        {/* ✅ NEW: Filtre avansate */}
         {showAdvancedFilters && (
           <div className="border-t pt-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              
-              {/* Creator */}
+            
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                   <User className="w-4 h-4" />
@@ -418,8 +376,6 @@ const Polls = () => {
                   <option value="others">Ale altora</option>
                 </select>
               </div>
-
-              {/* Perioada */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
@@ -436,8 +392,6 @@ const Polls = () => {
                   <option value="month">Ultima lună</option>
                 </select>
               </div>
-
-              {/* Voturi minime */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                   <Vote className="w-4 h-4" />
@@ -452,8 +406,6 @@ const Polls = () => {
                   className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-
-              {/* Voturi maxime */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
                   <Trophy className="w-4 h-4" />
@@ -470,7 +422,6 @@ const Polls = () => {
               </div>
             </div>
 
-            {/* Statistici filtrare */}
             <div className="mt-4 p-3 bg-gray-50 rounded-lg">
               <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                 <span className="flex items-center gap-1">
@@ -494,8 +445,6 @@ const Polls = () => {
           </div>
         )}
       </div>
-
-      {/* ✅ NEW: Buton pentru toggle formularul de creare - doar pentru sondaje active */}
       {filters.status !== 'closed' && (
         <div className="mb-6">
           <button
@@ -523,8 +472,6 @@ const Polls = () => {
           </button>
         </div>
       )}
-
-      {/* ✅ MODIFIED: Formularul de creare - conditionat de showCreateForm */}
       {filters.status !== 'closed' && showCreateForm && (
         <form onSubmit={createPoll} className="mb-8 p-6 bg-white rounded-lg shadow-md border">
           <div className="flex justify-between items-center mb-4">
@@ -630,8 +577,6 @@ const Polls = () => {
           </div>
         </form>
       )}
-
-      {/* Lista de sondaje filtrate */}
       {filteredPolls.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           {polls.length === 0 ? (
@@ -677,10 +622,7 @@ const Polls = () => {
                 <Vote className="w-3 h-3" />
                 Total voturi: {poll.total_votes || poll.options.reduce((sum, opt) => sum + opt.votes, 0)}
               </div>
-              
-              {/* Butoanele pentru fiecare sondaj */}
               <div className="flex flex-wrap gap-2 mt-4">
-                {/* Buton pentru a vedea sondajul */}
                 <Link
                   to={`/polls/${poll.id}`}
                   className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors flex items-center gap-1"
@@ -689,7 +631,6 @@ const Polls = () => {
                   Vezi
                 </Link>
                 
-                {/* Buton pentru statistici - afișează pentru toate sondajele închise sau cele la care nu s-a votat */}
                 {(!poll.is_active || !hasUserVoted(poll)) && (
                   <Link 
                     to={`/polls/${poll.id}/statistics`}
@@ -700,7 +641,6 @@ const Polls = () => {
                   </Link>
                 )}
                 
-                {/* Badge pentru status */}
                 <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${
                   poll.is_active 
                     ? 'bg-green-100 text-green-800' 
@@ -720,7 +660,6 @@ const Polls = () => {
                 </span>
               </div>
               
-              {/* Informații despre creator și voturi */}
               <div className="mt-3 pt-3 border-t border-gray-100">
                 <div className="flex justify-between items-center text-sm text-gray-600">
                   <Link to={`/users/${poll.creator_username}`} className="flex items-center gap-1 hover:text-blue-600">
@@ -742,9 +681,7 @@ const Polls = () => {
         </div>
       )}
 
-      {/* ✅ NEW: Shortcut buttons pentru filtrare rapidă */}
       <div className="fixed bottom-6 right-6 flex flex-col gap-2">
-        {/* Buton rapid pentru crearea unui sondaj */}
         {filters.status !== 'closed' && (
           <button
             onClick={() => setShowCreateForm(true)}

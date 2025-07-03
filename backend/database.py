@@ -1,9 +1,7 @@
-# database.py - Simple și funcțional
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
 import asyncio
 
-# Global variables
 client = None
 database = None
 
@@ -16,8 +14,6 @@ async def connect_to_mongo():
     try:
         client = AsyncIOMotorClient(MONGODB_URL)
         database = client[DATABASE_NAME]
-        
-        # Test the connection
         await client.admin.command('ping')
         print("✅ Connected to MongoDB successfully!")
         return True

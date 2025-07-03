@@ -1,4 +1,3 @@
-# secure_polls.py - FIXED cu stocarea și procesarea corectă a cryptotextelor
 import hashlib
 from fastapi import APIRouter, Depends, HTTPException, status
 from bson import ObjectId
@@ -9,7 +8,6 @@ import json
 import sys
 import os
 
-# Adaugă directorul backend în sys.path
 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
@@ -18,7 +16,6 @@ from routers.auth import get_current_user
 from database import get_database
 from models import SecurePollCreate, SecurePollResponse
 
-# ✅ IMPORT CORECTAT - doar crypto_system (fără backend.crypto_system)
 crypto_system = None
 
 try:
@@ -33,27 +30,24 @@ router = APIRouter(prefix="/secure-polls", tags=["secure_polls"])
 # Dictionary pentru a stoca sistemele crypto per sondaj
 poll_crypto_systems = {}
 
+# Helper function to safely retrieve the crypto system
 def get_crypto_system_safe(poll_id: str = None):
-    """Obține sistemul crypto cu verificări defensive"""
-    
-    # 1. Încearcă să folosești sistemul specific pentru sondaj
+    """Safely retrieves the crypto system for a specific poll or the global crypto system"""
+
     if poll_id and poll_id in poll_crypto_systems:
         system = poll_crypto_systems[poll_id]
         if system is not None:
             return system
-    
-    # 2. Încearcă să folosești sistemul crypto principal
     if crypto_system is not None:
         return crypto_system
-    
-    # 3. Eroare dacă nu există niciun sistem
     raise HTTPException(
         status_code=500, 
         detail="Crypto system not available. Please ensure crypto_system is properly configured."
     )
 
+# Helper function to serialize poll data for JSON compatibility
 def serialize_poll(poll: Dict[str, Any]) -> Dict[str, Any]:
-    """Helper function to serialize MongoDB poll document to JSON-compatible format"""
+    """Serializes MongoDB poll document into a JSON-compatible format"""
     try:
         poll_id = str(poll["_id"]) if "_id" in poll else None
         created_at = poll["created_at"].isoformat() if isinstance(poll.get("created_at"), datetime) else str(poll.get("created_at", ""))
@@ -89,7 +83,6 @@ def serialize_poll(poll: Dict[str, Any]) -> Dict[str, Any]:
             "final_results": poll.get("final_results", []),
             "total_votes": int(poll.get("total_votes", 0)),
             "encrypted_votes_count": len(poll.get("encrypted_votes", [])),
-            # ✅ Adaugă informații crypto REALE ENHANCED
             "has_paillier_encryption": bool(poll.get("paillier_public_key")),
             "has_blind_signatures": bool(poll.get("rsa_public_key")),
             "has_zkp_validation": True,
@@ -121,40 +114,137 @@ def serialize_poll(poll: Dict[str, Any]) -> Dict[str, Any]:
             "crypto_system_type": "none"
         }
 
+# Endpoint to get a voting token for a specific poll
 @router.post("/{poll_id}/get-token")
-async def get_voting_token_client_side(
+async def get_voting_token(
     poll_id: str,
     blinded_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
-    """DOAR blind signing - server nu vede mesajul original"""
+    """
+    Handles token requests for a specific poll and user.
+    Validates token registration and performs blind signing.
+    """
     try:
-        # ✅ CORECTARE: Folosește funcția safe
+        user_id = str(current_user["_id"])
+        token_request_key = f"{poll_id}:{user_id}"  
+
+        print(f"🔒 Processing blind signature request for poll {poll_id}, user {user_id}")
+        print(f"🔑 Looking for token request key: {token_request_key}")
+
         poll_crypto = get_crypto_system_safe(poll_id)
-        
-        # Server primește doar blinded token, nu mesajul original
-        blinded_token = blinded_data.get("blinded_token")
-        
-        # ✅ Verifică dacă metoda există
-        if hasattr(poll_crypto, 'blind_sign_token_only'):
-            blind_signature = poll_crypto.blind_sign_token_only(blinded_token)
+
+        if hasattr(poll_crypto, 'check_token_request_status'):
+            token_status = poll_crypto.check_token_request_status(token_request_key)
+            print(f"📊 Token status for {token_request_key}: {token_status}")
+            
+            if not token_status.get('has_request', False):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"User {user_id} did not register token request for poll {poll_id}"
+                )
+            
+            if not token_status.get('can_request_token', True):
+                if token_status.get('token_generated', False):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"User {user_id} already generated token for poll {poll_id}"
+                    )
         else:
-            raise HTTPException(status_code=500, detail="Blind signing not supported by crypto system")
-        
+            if hasattr(poll_crypto, 'token_requests'):
+                if token_request_key not in poll_crypto.token_requests:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"User {user_id} did not register token request for poll {poll_id}"
+                    )
+
+        blinded_token = blinded_data.get("blinded_token")
+        if not blinded_token:
+            raise HTTPException(status_code=400, detail="Missing blinded_token")
+
+        try:
+            if hasattr(poll_crypto, 'blind_sign_token_with_user_tracking'):
+                blind_signature = poll_crypto.blind_sign_token_with_user_tracking(blinded_token, token_request_key)
+            elif hasattr(poll_crypto, 'blind_sign_token'):
+                blind_signature = poll_crypto.blind_sign_token(blinded_token)
+            else:
+                raise HTTPException(status_code=500, detail="Blind signing method not available in crypto system")
+                
+            print(f"✅ Blind signature generated for {token_request_key}")
+            
+        except Exception as e:
+            print(f"❌ Error during blind signing for {token_request_key}: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to perform blind signing: {str(e)}")
+
         return {
             "blind_signature": blind_signature,
-            "message": "Token signed blindly - server never saw original message",
-            "server_plaintext_access": "NEVER"
+            "message": "Token signed successfully",
+            "user_tracking": {
+                "poll_id": poll_id,
+                "user_id": user_id,
+                "scoped_key": token_request_key
+            }
         }
+        
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error in blind signing: {e}")
+        print(f"❌ Error in token request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Endpoint to register a token request for a specific poll
+@router.post("/{poll_id}/register-token")
+async def register_token_request(
+    poll_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+
+    """
+    Registers a token request for the user scoped by pollId.
+    Ensures proper tracking and validation.
+    """
+    try:
+        user_id = str(current_user["_id"])
+        token_request_key = f"{poll_id}:{user_id}"  
+
+        print(f"🎫 Registering token request for poll {poll_id}, user {user_id}")
+        print(f"🔑 Token request key: {token_request_key}")
+
+        poll_crypto = get_crypto_system_safe(poll_id)
+
+        if hasattr(poll_crypto, 'register_token_request'):
+
+            success = poll_crypto.register_token_request(token_request_key, {
+                "user_id": user_id,
+                "poll_id": poll_id,
+                "username": current_user.get("username", "unknown")
+            })
+            if not success:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Failed to register token request for user {user_id} on poll {poll_id}"
+                )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail="Token registration method not available in crypto system"
+            )
+
+        print(f"✅ Token request registered successfully for {token_request_key}")
+        return {"success": True, "message": "Token request registered successfully", "scoped_key": token_request_key}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error registering token request: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+# Endpoint to retrieve public crypto keys for a specific poll
 @router.get("/{poll_id}/crypto-keys")
 async def get_poll_crypto_keys(poll_id: str):
-    """Get public keys for this specific poll including RSA components for client-side blinding"""
+    """
+    Retrieves public keys for the specified poll, including RSA components for client-side blinding.
+    """
     try:
         if not ObjectId.is_valid(poll_id):
             raise HTTPException(status_code=400, detail="Invalid poll ID")
@@ -165,7 +255,6 @@ async def get_poll_crypto_keys(poll_id: str):
         if not poll:
             raise HTTPException(status_code=404, detail="Poll not found")
         
-        # ✅ ENHANCED: Returnează toate cheile necesare pentru client
         paillier_key = json.loads(poll.get("paillier_public_key", "{}"))
         rsa_key = poll.get("rsa_public_key", "")
         rsa_components = json.loads(poll.get("rsa_public_components", "{}"))
@@ -193,9 +282,12 @@ async def get_poll_crypto_keys(poll_id: str):
         print(f"❌ Error getting crypto keys: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get crypto keys: {str(e)}")
 
+# Endpoint to fetch all secure polls
 @router.get("/")
 async def get_secure_polls():
-    """Get all secure polls with REAL enhanced encryption info"""
+    """
+    Retrieves all secure polls from the database with enhanced encryption information.
+    """
     try:
         db = await get_database()
         
@@ -226,12 +318,16 @@ async def get_secure_polls():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to fetch secure polls: {str(e)}")
 
+# Endpoint to create a new secure poll
 @router.post("/")
 async def create_secure_poll(
     poll_data: SecurePollCreate,
     current_user: dict = Depends(get_current_user)
 ):
-    """Create a new secure poll with REAL enhanced Paillier encryption and ZKP validation"""
+    """
+    Creates a new secure poll with enhanced encryption and ZKP validation.
+    Requires admin privileges.
+    """
     try:
         if not current_user.get("is_admin", False):
             raise HTTPException(status_code=403, detail="Only administrators can create secure polls")
@@ -240,10 +336,8 @@ async def create_secure_poll(
         
         print(f"🔐 Admin {current_user.get('email')} creating REAL enhanced encrypted poll: {poll_data.title}")
         
-        # ✅ CORECTARE: Folosește funcția safe
         poll_crypto = get_crypto_system_safe()
-        
-        # ✅ Verifică dacă metodele există
+
         if not hasattr(poll_crypto, 'get_public_keys'):
             raise HTTPException(status_code=500, detail="Crypto system does not support key generation")
         
@@ -254,8 +348,7 @@ async def create_secure_poll(
             print(f"🔑 Enhanced crypto system status: {status_info}")
         else:
             status_info = {"type": "enhanced", "initialized": True}
-        
-        # ✅ Verifică că avem toate cheile necesare
+
         required_keys = ["paillier_public_key", "rsa_public_key", "rsa_public_components"]
         for key in required_keys:
             if key not in public_keys:
@@ -272,11 +365,9 @@ async def create_secure_poll(
             "encrypted_votes": [],
             "final_results": None,
             "total_votes": 0,
-            # ✅ SALVEAZĂ CHEI PUBLICE REALE ENHANCED
             "paillier_public_key": json.dumps(public_keys["paillier_public_key"]),
             "rsa_public_key": public_keys["rsa_public_key"],
             "rsa_public_components": json.dumps(public_keys["rsa_public_components"]),
-            # ✅ NEW: Enhanced crypto flags
             "enhanced_crypto": True,
             "zkp_validation_enabled": True,
             "real_blind_signatures": True,
@@ -285,13 +376,11 @@ async def create_secure_poll(
         
         result = await db.secure_polls.insert_one(poll_doc)
         poll_doc["_id"] = result.inserted_id
-        
-        # ✅ SALVEAZĂ SISTEMUL CRYPTO PENTRU ACEST SONDAJ
+
         poll_crypto_systems[str(result.inserted_id)] = poll_crypto
         
         print(f"✅ REAL enhanced encrypted poll created with Paillier + RSA + ZKP, ID: {result.inserted_id}")
-        
-        # ✅ LOG SAFE
+
         paillier_n = str(public_keys["paillier_public_key"].get("n", ""))
         rsa_n = str(public_keys["rsa_public_components"].get("n", ""))
         rsa_e = str(public_keys["rsa_public_components"].get("e", ""))
@@ -309,13 +398,17 @@ async def create_secure_poll(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to create secure poll: {str(e)}")
 
+# Endpoint to submit a client-encrypted vote for a specific poll
 @router.post("/{poll_id}/vote")
 async def vote_client_encrypted(
     poll_id: str,
     vote_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
-    """Primește voturi DEJA criptate pe client - FIXED pentru stocarea corectă a cryptotextelor"""
+    """
+    Processes client-encrypted votes for the specified poll.
+    Validates ZKP and anonymous signatures, and stores encrypted data.
+    """
     try:
         if not ObjectId.is_valid(poll_id):
             raise HTTPException(status_code=400, detail="Invalid poll ID")
@@ -328,8 +421,7 @@ async def vote_client_encrypted(
         
         if not poll.get("is_active", True):
             raise HTTPException(status_code=400, detail="Poll is not active")
-        
-        # Verifică dacă utilizatorul a votat deja
+
         existing_vote = await db.secure_votes.find_one({
             "poll_id": poll_id,
             "user_id": str(current_user["_id"])
@@ -339,14 +431,12 @@ async def vote_client_encrypted(
             raise HTTPException(status_code=400, detail="User has already voted on this poll")
         
         poll_crypto = get_crypto_system_safe(poll_id)
-        
-        # ✅ FIX: Procesează corect datele de la frontend
+
         encrypted_vote = vote_data.get("encrypted_vote", [])
         signature = vote_data.get("signature", "")
         zk_proof = vote_data.get("zk_proof", [])
         vote_index = vote_data.get("vote_index", 0)
-        
-        # ✅ CORECTARE MAJORĂ: Extrage datele criptografice complete din frontend
+
         encrypted_vote_data = vote_data.get("encrypted_vote_data", {})
         encrypted_components = encrypted_vote_data.get("encrypted_components", [])
         
@@ -356,8 +446,7 @@ async def vote_client_encrypted(
         print(f"🔐 Has signature: {bool(signature)}")
         print(f"🕵️ Has ZK proof: {bool(zk_proof)}")
         print(f"🔐 Has encrypted components: {len(encrypted_components)} components")
-        
-        # ✅ Verifică ZKP dacă există
+
         zk_verified = False
         if zk_proof and hasattr(poll_crypto, 'verify_vote_with_proof'):
             try:
@@ -366,8 +455,7 @@ async def vote_client_encrypted(
             except Exception as zkp_error:
                 print(f"⚠️ ZKP verification error: {zkp_error}")
                 zk_verified = False
-        
-        # ✅ FIX: Verifică și folosește anonymous signature
+
         signature_verified = False
         signature_hash = None
         if signature and hasattr(poll_crypto, 'validate_anonymous_signature'):
@@ -376,7 +464,7 @@ async def vote_client_encrypted(
                 signature_verified = poll_crypto.validate_anonymous_signature(signature, message)
                 signature_hash = hashlib.sha256(str(signature).encode()).hexdigest()
                 
-                # ✅ Marchează token-ul ca folosit pentru a preveni double voting
+                # Marchează token-ul ca folosit pentru a preveni double voting
                 if signature_verified and hasattr(poll_crypto, 'use_anonymous_voting_token'):
                     poll_crypto.use_anonymous_voting_token(signature_hash)
                 
@@ -385,7 +473,6 @@ async def vote_client_encrypted(
                 print(f"⚠️ Signature verification error: {sig_error}")
                 signature_verified = False
         
-        # ✅ CORECTARE MAJORĂ: Salvează votul cu datele criptografice complete
         vote_doc = {
             "poll_id": poll_id,
             "user_id": str(current_user["_id"]),
@@ -399,7 +486,6 @@ async def vote_client_encrypted(
             "verified": True,
             "anonymous": True,
             "client_encrypted": True,
-            # ✅ ADĂUGAT: Datele criptografice complete din frontend
             "original_encrypted_data": encrypted_vote_data,
             "encrypted_components": encrypted_components,
             "cryptographic_metadata": {
@@ -411,10 +497,9 @@ async def vote_client_encrypted(
             }
         }
         
-        # ✅ FIX: Salvează votul în baza de date
+
         await db.secure_votes.insert_one(vote_doc)
         
-        # ✅ CORECTARE MAJORĂ: Adaugă votul criptat la poll cu structura completă
         encrypted_vote_entry = {
             "encrypted_vector": encrypted_vote,
             "encrypted_components": encrypted_components,
@@ -431,12 +516,11 @@ async def vote_client_encrypted(
             }
         }
         
-        # ✅ FIX: Update poll cu datele criptografice complete
         await db.secure_polls.update_one(
             {"_id": ObjectId(poll_id)},
             {
                 "$push": {
-                    "encrypted_votes": encrypted_vote_entry  # ✅ Structura completă
+                    "encrypted_votes": encrypted_vote_entry 
                 },
                 "$inc": {"total_votes": 1}
             }
@@ -474,12 +558,16 @@ async def vote_client_encrypted(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to process vote: {str(e)}")
 
+# Endpoint to close a poll and decrypt results
 @router.post("/{poll_id}/close")
 async def close_secure_poll(
     poll_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    """Close poll and decrypt results using REAL enhanced Paillier decryption with ZKP validation - FIXED tallying"""
+    """
+    Closes the poll and decrypts results using enhanced Paillier homomorphic decryption.
+    Validates ZKP and ensures proper tallying.
+    """
     try:
         if not ObjectId.is_valid(poll_id):
             raise HTTPException(status_code=400, detail="Invalid poll ID format")
@@ -501,28 +589,25 @@ async def close_secure_poll(
         
         print(f"🔒 Closing poll with REAL enhanced Paillier homomorphic decryption: {poll['title']}")
         
-        # ✅ CORECTARE: Folosește funcția safe
         poll_crypto = get_crypto_system_safe(poll_id)
         
-        # ✅ CORECTARE MAJORĂ: Colectează voturile din sursa corectă cu datele complete
         print("🔍 Collecting encrypted votes from database...")
-        
-        # Caută în secure_votes collection pentru datele complete
+
         votes_cursor = db.secure_votes.find({"poll_id": poll_id})
         vote_documents = await votes_cursor.to_list(length=None)
         
-        # Și din poll document pentru backup
+
         poll_encrypted_votes = poll.get("encrypted_votes", [])
         
         print(f"📊 Found {len(vote_documents)} votes in secure_votes collection")
         print(f"📊 Found {len(poll_encrypted_votes)} votes in poll document")
         
-        # ✅ PROCESARE CORECTĂ: Construiește lista pentru tallying
+
         encrypted_votes_for_tallying = []
         valid_votes = 0
         zkp_validated_votes = 0
         
-        # Procesează voturile din secure_votes (cea mai completă sursă)
+
         for vote_doc in vote_documents:
             vote_entry = {
                 "vote_index": vote_doc.get("vote_index", 0),
@@ -542,8 +627,6 @@ async def close_secure_poll(
                 print(f"✅ ZKP validation passed for vote")
             
             valid_votes += 1
-        
-        # Fallback: dacă nu găsim în secure_votes, folosește din poll
         if not encrypted_votes_for_tallying and poll_encrypted_votes:
             print("⚠️ Fallback: Using votes from poll document")
             for vote_entry in poll_encrypted_votes:
@@ -560,7 +643,6 @@ async def close_secure_poll(
         print(f"🔢 Processing {len(encrypted_votes_for_tallying)} encrypted votes for enhanced homomorphic tallying")
         print(f"🕵️ ZKP validated votes: {zkp_validated_votes}/{valid_votes}")
         
-        # ✅ CORECTARE MAJORĂ: Tallying îmbunătățit pentru rezultate corecte
         if encrypted_votes_for_tallying:
             try:
                 if hasattr(poll_crypto, 'tally_votes'):
@@ -568,7 +650,7 @@ async def close_secure_poll(
                     final_results = poll_crypto.tally_votes(encrypted_votes_for_tallying)
                 else:
                     print("🔢 Using manual tallying...")
-                    # Manual tallying bazat pe vote_index
+
                     num_options = len(poll["options"])
                     final_results = [0] * num_options
                     
@@ -583,7 +665,6 @@ async def close_secure_poll(
                 print(f"🎯 REAL enhanced tallying results: {final_results}")
             except Exception as tally_error:
                 print(f"❌ Error in vote tallying: {tally_error}")
-                # Fallback la numărare manuală
                 num_options = len(poll["options"])
                 final_results = [0] * num_options
                 
@@ -596,16 +677,14 @@ async def close_secure_poll(
         else:
             final_results = [0] * len(poll["options"])
             print(f"📊 No votes to tally, results: {final_results}")
-        
-        # ✅ ENHANCED: Formatează rezultatele cu metadata crypto
+
         results = []
         for i, option in enumerate(poll["options"]):
             results.append({
                 "option": option["text"],
                 "votes": final_results[i] if i < len(final_results) else 0
             })
-        
-        # ✅ NEW: Calculează statistici crypto îmbunătățite
+
         crypto_stats = {
             "total_votes": len(encrypted_votes_for_tallying),
             "zkp_validated_votes": zkp_validated_votes,
@@ -619,6 +698,9 @@ async def close_secure_poll(
             "votes_source": "secure_votes_collection" if vote_documents else "poll_document"
         }
         
+        scaled_results = [min(result, 2**63 - 1) for result in final_results]
+        print(f"📊 Scaled results for MongoDB storage: {scaled_results}")
+        
         await db.secure_polls.update_one(
             {"_id": ObjectId(poll_id)},
             {
@@ -626,7 +708,9 @@ async def close_secure_poll(
                     "is_active": False,
                     "final_results": results,
                     "closed_at": datetime.now(timezone.utc),
-                    "crypto_statistics": crypto_stats
+                    "crypto_statistics": crypto_stats,
+                    "results": scaled_results,
+                    "status": "closed"
                 }
             }
         )
@@ -646,9 +730,12 @@ async def close_secure_poll(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to close poll: {str(e)}")
 
+# Endpoint to fetch details of a specific secure poll
 @router.get("/{poll_id}")
 async def get_secure_poll(poll_id: str):
-    """Get a specific secure poll by ID with enhanced crypto info"""
+    """
+    Retrieves details of a specific secure poll by ID, including enhanced crypto information.
+    """
     try:
         print(f"📋 Fetching enhanced secure poll with ID: {poll_id}")
         
@@ -673,12 +760,16 @@ async def get_secure_poll(poll_id: str):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to fetch secure poll: {str(e)}")
 
+# Endpoint to export cryptotexts from a closed poll
 @router.get("/{poll_id}/export-cryptotexts")
 async def export_cryptotexts(
     poll_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    """Export all cryptotexts from a closed secure poll - FIXED pentru cryptotextele reale"""
+    """
+    Exports all cryptotexts from a closed secure poll.
+    Includes complete cryptographic metadata.
+    """
     try:
         if not ObjectId.is_valid(poll_id):
             raise HTTPException(status_code=400, detail="Invalid poll ID format")
@@ -689,7 +780,6 @@ async def export_cryptotexts(
         if not poll:
             raise HTTPException(status_code=404, detail="Secure poll not found")
         
-        # Verifică permisiunile - doar admin sau creator
         is_admin = current_user.get("is_admin", False)
         is_creator = str(current_user["_id"]) == poll.get("creator_id")
         
@@ -699,7 +789,7 @@ async def export_cryptotexts(
                 detail="Only administrators or poll creators can export cryptotexts"
             )
         
-        # Verifică că sondajul este închis
+
         if poll.get("is_active", True):
             raise HTTPException(
                 status_code=400, 
@@ -707,22 +797,18 @@ async def export_cryptotexts(
             )
         
         print(f"📁 Exporting REAL cryptotexts for poll: {poll['title']}")
-        
-        # ✅ CORECTARE MAJORĂ: Colectează cryptotextele din sursa corectă
+
         encrypted_votes = []
-        
-        # Caută în secure_votes collection pentru datele complete
+
         print("🔍 Searching for cryptotexts in secure_votes collection...")
         votes_cursor = db.secure_votes.find({"poll_id": poll_id})
         vote_documents = await votes_cursor.to_list(length=None)
-        
-        # Și din poll document pentru backup
+
         poll_encrypted_votes = poll.get("encrypted_votes", [])
         
         print(f"📊 Found {len(vote_documents)} votes in secure_votes collection")
         print(f"📊 Found {len(poll_encrypted_votes)} votes in poll document")
-        
-        # ✅ Prioritizează secure_votes collection (cea mai completă)
+
         if vote_documents:
             print("✅ Using cryptotexts from secure_votes collection (complete data)")
             for vote_doc in vote_documents:
@@ -776,8 +862,7 @@ async def export_cryptotexts(
                 "cryptographic_integrity": True
             }
         }
-        
-        # ✅ PROCESARE ÎMBUNĂTĂȚITĂ: Procesează fiecare vot criptat cu datele complete
+
         for i, vote in enumerate(encrypted_votes):
             vote_entry = {
                 "vote_sequence": i + 1,
@@ -805,8 +890,7 @@ async def export_cryptotexts(
                     "homomorphic_ready": True
                 }
             }
-            
-            # ✅ Adaugă detalii ZK proof dacă există
+
             if vote.get("zk_proof"):
                 zk_proof = vote["zk_proof"]
                 vote_entry["zk_proof_info"] = {
@@ -818,8 +902,7 @@ async def export_cryptotexts(
                     "timestamp": zk_proof.get("timestamp"),
                     "client_generated": True
                 }
-                
-                # ✅ Pentru audit complet, include structura ZK proof
+
                 if zk_proof.get("commitments") and zk_proof.get("challenge") and zk_proof.get("responses"):
                     vote_entry["zk_proof_structure"] = {
                         "commitments_count": len(zk_proof.get("commitments", [])),
@@ -827,16 +910,14 @@ async def export_cryptotexts(
                         "responses_count": len(zk_proof.get("responses", [])),
                         "proof_complete": True
                     }
-            
-            # ✅ Adaugă hash-ul semnăturii (parțial pentru privacy)
+
             if vote.get("signature_hash"):
                 vote_entry["signature_info"] = {
                     "signature_hash_partial": vote["signature_hash"][:16] + "...",
                     "signature_provided": True,
                     "anonymous": True
                 }
-            
-            # ✅ Adaugă datele criptografice originale dacă există
+
             if vote.get("original_encrypted_data"):
                 original_data = vote["original_encrypted_data"]
                 vote_entry["original_frontend_data"] = {
@@ -860,31 +941,32 @@ async def export_cryptotexts(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to export cryptotexts: {str(e)}")
 
+# Endpoint to download cryptotexts as a file (JSON or CSV)
 @router.get("/{poll_id}/download-cryptotexts")
 async def download_cryptotexts_file(
     poll_id: str,
     format: str = "json",
     current_user: dict = Depends(get_current_user)
 ):
-    """Download cryptotexts as file (JSON or CSV) - FIXED pentru cryptotextele reale"""
+    """
+    Downloads cryptotexts as a file in JSON or CSV format.
+    Includes complete cryptographic metadata.
+    """
     try:
         from fastapi.responses import Response
         import json
         import csv
         from io import StringIO
         
-        # Obține datele de export cu cryptotextele reale
         export_data = await export_cryptotexts(poll_id, current_user)
         
         poll_title = export_data["poll_info"]["title"].replace(" ", "_").replace("/", "_")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         if format.lower() == "csv":
-            # Export ca CSV cu cryptotextele reale
             output = StringIO()
             writer = csv.writer(output)
             
-            # Header îmbunătățit pentru cryptotexte
             writer.writerow([
                 "Vote_Sequence", "Vote_Index", "Timestamp", 
                 "Encrypted_Vector", "Encrypted_Components_Count", "Paillier_Ciphertexts",
@@ -892,12 +974,9 @@ async def download_cryptotexts_file(
                 "ZK_Protocol", "Client_Encrypted"
             ])
             
-            # Data cu cryptotextele reale
             for vote in export_data["encrypted_votes"]:
-                # Formatează cryptotextele pentru CSV
                 encrypted_vector_str = "|".join(str(x) for x in vote.get("encrypted_vector", []))
                 
-                # Extrage Paillier ciphertexts din componentele criptate
                 paillier_ciphers = ""
                 if vote.get("encrypted_components"):
                     cipher_parts = []
@@ -905,7 +984,7 @@ async def download_cryptotexts_file(
                         if isinstance(comp, dict) and comp.get("encrypted_vote"):
                             cipher_data = comp["encrypted_vote"]
                             if isinstance(cipher_data, dict) and cipher_data.get("ciphertext"):
-                                cipher_parts.append(cipher_data["ciphertext"][:50] + "...")  # Truncat pentru CSV
+                                cipher_parts.append(cipher_data["ciphertext"][:50] + "...") 
                             else:
                                 cipher_parts.append(str(cipher_data)[:50] + "...")
                     paillier_ciphers = "|".join(cipher_parts)
@@ -932,7 +1011,6 @@ async def download_cryptotexts_file(
             filename = f"cryptotexts_{poll_title}_{timestamp}.csv"
             
         else:
-            # Export ca JSON (default) cu toate cryptotextele
             content = json.dumps(export_data, indent=2, ensure_ascii=False)
             media_type = "application/json"
             filename = f"cryptotexts_{poll_title}_{timestamp}.json"
@@ -955,8 +1033,7 @@ async def download_cryptotexts_file(
         print(f"❌ Error downloading cryptotexts file: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-from typing import List, Dict, Any
-
+# Endpoint to locally tally uploaded cryptotexts
 @router.post("/{poll_id}/local-tally", 
              response_model=Dict[str, int], 
              summary="Tally criptotexturi încărcate")
@@ -966,17 +1043,16 @@ async def local_tally(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Primește un JSON cu cryptotexturi (același format ca la export) 
-    și returnează un dict {option_index: vote_count}.
+    Tally uploaded cryptotexts and return vote counts per option.
     """
-    # opţional: verificări de permisiune/admin
     results = crypto_system.tally_votes(cryptotexts)
     return { str(i): cnt for i, cnt in enumerate(results) }
 
+# Endpoint to check if a user has voted in a specific poll
 @router.get("/{poll_id}/vote-status")
 async def get_vote_status(poll_id: str, current_user: dict = Depends(get_current_user)):
     """
-    Verifică dacă utilizatorul a votat deja la acest sondaj securizat
+    Checks whether the user has already voted in the specified secure poll.
     """
     try:
         if not ObjectId.is_valid(poll_id):
@@ -984,12 +1060,10 @@ async def get_vote_status(poll_id: str, current_user: dict = Depends(get_current
         
         db = await get_database()
         
-        # Verifică dacă sondajul există
         poll = await db.secure_polls.find_one({"_id": ObjectId(poll_id)})
         if not poll:
             raise HTTPException(status_code=404, detail="Secure poll not found")
         
-        # Caută votul în secure_votes collection
         existing_vote = await db.secure_votes.find_one({
             "poll_id": poll_id,
             "user_id": str(current_user["_id"])

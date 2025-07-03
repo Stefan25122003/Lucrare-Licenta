@@ -1,4 +1,3 @@
-// Profile.js - UPDATED cu Lucide React icons
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -131,7 +130,6 @@ const Profile = () => {
       setSaving(true);
       setMessage('');
 
-      // Validări
       if (profile.age && (profile.age < 13 || profile.age > 120)) {
         setMessage('❌ Vârsta trebuie să fie între 13 și 120 de ani');
         return;
@@ -142,7 +140,6 @@ const Profile = () => {
         return;
       }
 
-      // Creează obiectul cu doar câmpurile modificate
       const updateData = {};
       Object.keys(profile).forEach(key => {
         if (key !== 'username' && key !== 'email' && profile[key] !== originalProfile[key]) {
@@ -267,7 +264,6 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
-        {/* Header Section */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <div className="flex items-center space-x-6">
             <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
@@ -324,7 +320,6 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Message Alert */}
         {message && (
           <div className={`mb-6 p-4 rounded-lg flex items-center space-x-3 ${
             message.includes('✅') ? 'bg-green-100 text-green-800 border border-green-200' : 
@@ -343,9 +338,7 @@ const Profile = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-2xl font-bold mb-6 flex items-center space-x-2">
                 <User className="w-6 h-6 text-blue-500" />
@@ -353,7 +346,6 @@ const Profile = () => {
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Username (readonly) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
                     <User className="w-4 h-4" />
@@ -367,7 +359,6 @@ const Profile = () => {
                   />
                 </div>
 
-                {/* Email (readonly) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
                     <Mail className="w-4 h-4" />
@@ -380,8 +371,6 @@ const Profile = () => {
                     className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-
-                {/* Prenume */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
                     <User className="w-4 h-4" />
@@ -400,7 +389,6 @@ const Profile = () => {
                   />
                 </div>
 
-                {/* Nume */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
                     <User className="w-4 h-4" />
@@ -419,7 +407,6 @@ const Profile = () => {
                   />
                 </div>
 
-                {/* Oraș */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
                     <MapPin className="w-4 h-4" />
@@ -438,7 +425,6 @@ const Profile = () => {
                   />
                 </div>
 
-                {/* Vârsta */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
                     <Calendar className="w-4 h-4" />
@@ -459,7 +445,6 @@ const Profile = () => {
                   />
                 </div>
 
-                {/* Telefon */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
                     <Phone className="w-4 h-4" />
@@ -478,7 +463,6 @@ const Profile = () => {
                   />
                 </div>
 
-                {/* Biografie */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
                     <FileText className="w-4 h-4" />
@@ -506,7 +490,6 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Security Section */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold flex items-center space-x-2">
@@ -620,9 +603,7 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Avatar Card */}
             <div className="bg-white rounded-xl shadow-lg p-6 text-center">
               <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-4xl font-bold mx-auto mb-4 shadow-lg">
                 {getInitials()}
@@ -642,7 +623,7 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Statistics */}
+
             {stats && (
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h3 className="text-xl font-bold mb-4 flex items-center space-x-2">
@@ -682,7 +663,6 @@ const Profile = () => {
               </div>
             )}
 
-            {/* Info Card */}
             <div className="bg-blue-50 rounded-xl p-6 border-l-4 border-blue-500">
               <h4 className="font-bold text-blue-800 mb-3 flex items-center space-x-2">
                 <Info className="w-5 h-5" />

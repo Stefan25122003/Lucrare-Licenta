@@ -38,7 +38,6 @@ const PollDetail = () => {
       });
       setPoll(response.data);
       
-      // ✅ FIXED: Verifică dacă utilizatorul a votat folosind informațiile de la backend
       const userHasVoted = checkIfUserVoted(response.data);
       setHasVoted(userHasVoted);
       
@@ -50,21 +49,15 @@ const PollDetail = () => {
     }
   };
 
-  // ✅ FIXED: Funcție pentru a verifica dacă utilizatorul a votat (similar cu Polls.js)
   const checkIfUserVoted = (pollData) => {
     if (!user || !user.id) return false;
     
-    // Verifică în mai multe moduri posibile cum backend-ul trimite informațiile:
-    // 1. Dacă poll are proprietatea user_has_voted
     if (pollData.user_has_voted === true) return true;
     
-    // 2. Dacă poll are array de voters cu ID-ul userului
     if (pollData.voters && pollData.voters.includes(user.id)) return true;
     
-    // 3. Dacă poll are proprietatea voted_users cu ID-ul userului
     if (pollData.voted_users && pollData.voted_users.includes(user.id)) return true;
     
-    // 4. Dacă poll are proprietatea votes care conține informații despre user
     if (pollData.votes && pollData.votes.some(vote => vote.user_id === user.id)) return true;
     
     return false;
@@ -88,14 +81,9 @@ const PollDetail = () => {
       
       setMessage(response.data.message);
       setHasVoted(true);
-      
-      // ✅ REMOVED: Nu mai folosim localStorage pentru a stoca voturile
-      // localStorage-ul nu este sincronizat cu backend-ul
-      
-      // Reîncarcă sondajul pentru a vedea rezultatele actualizate
+
       setTimeout(() => {
         fetchPoll();
-        // ✅ FIXED: Curăță mesajul după un timp
         setTimeout(() => setMessage(''), 3000);
       }, 1000);
       
@@ -103,7 +91,6 @@ const PollDetail = () => {
       const errorMessage = error.response?.data?.detail || 'Eroare la votare';
       setMessage(errorMessage);
       
-      // Dacă eroarea spune că utilizatorul a votat deja, marchează ca și votat
       if (errorMessage.includes('already voted') || errorMessage.includes('votat deja')) {
         setHasVoted(true);
       }
@@ -208,7 +195,6 @@ const PollDetail = () => {
           </div>
         </div>
 
-        {/* ✅ FIXED: Status votare - afișează doar când utilizatorul a votat */}
         {hasVoted && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-center text-green-700">
@@ -218,7 +204,6 @@ const PollDetail = () => {
           </div>
         )}
 
-        {/* Message - doar pentru acțiuni specifice */}
         {message && (
           <div className={`p-4 rounded-lg mb-6 flex items-center gap-2 ${
             message.includes('Eroare') || message.includes('eșuat') ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-800'
@@ -258,7 +243,7 @@ const PollDetail = () => {
                     ></div>
                   </div>
                   
-                  {/* ✅ FIXED: Buton de votare mic - afișează doar dacă sondajul este activ și utilizatorul nu a votat */}
+
                   {poll.is_active && !hasVoted && (
                     <button
                       onClick={() => handleVote(index)}
@@ -284,9 +269,8 @@ const PollDetail = () => {
           </div>
         </div>
 
-        {/* Butoane de acțiune */}
         <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
-          {/* Buton pentru statistici - pentru toată lumea */}
+          {/* Buton pentru statistici */}
           <Link 
             to={`/polls/${poll.id}/statistics`}
             className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors inline-flex items-center gap-2"
@@ -317,7 +301,7 @@ const PollDetail = () => {
             </button>
           )}
           
-          {/* Buton înapoi */}
+          {/* buton inapoi */}
           <Link 
             to="/polls"
             className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors inline-flex items-center gap-2"

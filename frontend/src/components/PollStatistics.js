@@ -105,7 +105,6 @@ const PollStatistics = () => {
     );
   }
 
-  // Configurare grafice
   const voteDistributionData = {
     labels: analytics.statistics.vote_distribution.map(v => v.option_text),
     datasets: [{
@@ -154,7 +153,6 @@ const PollStatistics = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 transition-colors duration-300">
       <div className="container mx-auto p-4">
-        {/* Header cu navigare */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center space-x-3">
             <BarChart3 className="w-8 h-8 text-blue-600" />
@@ -169,7 +167,6 @@ const PollStatistics = () => {
           </Link>
         </div>
         
-        {/* Header cu informații generale */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6 transition-colors duration-300">
           <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{analytics.poll_info.title}</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -208,7 +205,6 @@ const PollStatistics = () => {
           </div>
         </div>
 
-        {/* Insights */}
         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg mb-6 border-l-4 border-blue-500 transition-colors duration-300">
           <h3 className="text-lg font-bold mb-3 text-blue-900 dark:text-blue-100 flex items-center space-x-2">
             <Lightbulb className="w-5 h-5" />
@@ -225,7 +221,6 @@ const PollStatistics = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Distribuția voturilor */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md transition-colors duration-300">
             <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center space-x-2">
               <BarChart3 className="w-5 h-5 text-blue-600" />
@@ -240,7 +235,6 @@ const PollStatistics = () => {
             }} />
           </div>
 
-          {/* Distribuția pe vârste */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md transition-colors duration-300">
             <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center space-x-2">
               <Users className="w-5 h-5 text-green-600" />
@@ -255,7 +249,7 @@ const PollStatistics = () => {
             }} />
           </div>
 
-          {/* Top orașe */}
+
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md transition-colors duration-300">
             <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center space-x-2">
               <MapPin className="w-5 h-5 text-purple-600" />
@@ -269,8 +263,6 @@ const PollStatistics = () => {
               }
             }} />
           </div>
-
-          {/* Breakdown demografic pe opțiuni */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md transition-colors duration-300">
             <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center space-x-2">
               <PieChart className="w-5 h-5 text-orange-600" />
@@ -302,7 +294,7 @@ const PollStatistics = () => {
           </div>
         </div>
 
-        {/* Lista votanților (opțional, pentru admini) */}
+/}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mt-6 transition-colors duration-300">
           <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center space-x-2">
             <UserCheck className="w-5 h-5 text-green-600" />

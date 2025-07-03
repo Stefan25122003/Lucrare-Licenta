@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ FIXED: Adaugă funcția register
+
   const register = async (username, email, password) => {
     try {
       console.log('🔄 Attempting registration...');
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', token);
       const userData = await getCurrentUser(token);
       console.log('✅ AuthContext: User data received:', userData);
-      console.log('🔑 Is admin?', userData.is_admin); // Debug log pentru admin status
+      console.log('🔑 Is admin?', userData.is_admin); 
       setUser(userData);
       return userData;
     } catch (error) {
@@ -73,7 +73,6 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  // Verifică token-ul la încărcarea aplicației
   useEffect(() => {
     const initializeAuth = async () => {
       if (isInitializingRef.current) {
@@ -90,7 +89,7 @@ export const AuthProvider = ({ children }) => {
           console.log('🔑 AuthContext: Found token, verifying...');
           const userData = await getCurrentUser(token);
           console.log('✅ AuthContext: Token valid, user loaded:', userData.email);
-          console.log('🔑 Admin status:', userData.is_admin); // Debug log
+          console.log('🔑 Admin status:', userData.is_admin); 
           setUser(userData);
         } catch (error) {
           console.error('❌ AuthContext: Token invalid, removing...', error);
@@ -105,16 +104,16 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, []); // Empty dependency array
+  }, []); 
 
-  // ✅ FIXED: Asigură-te că register este inclus în value
+
   const value = {
     user,
     loading,
     login,
-    register, // ← Adaugă aceasta
+    register, 
     logout,
-    isAdmin: user?.is_admin || false // ✅ FIX: Exportă și isAdmin pentru ușurință
+    isAdmin: user?.is_admin || false 
   };
 
   return (

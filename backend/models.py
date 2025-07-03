@@ -1,17 +1,16 @@
-# models.py - FIXED cu toate modelele corecte
+
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime
 from bson import ObjectId
 
-# User Models - FIXED toate clasele necesare
 class UserRegistration(BaseModel):
     username: str
     email: EmailStr
     password: str
 
 class UserLogin(BaseModel):
-    email: EmailStr  # ✅ FIX: Login cu email
+    email: EmailStr  
     password: str
 
 class UserCreate(BaseModel):
@@ -137,7 +136,7 @@ class SystemStatusResponse(BaseModel):
     anonymity: str
     timestamp: str
 
-# User model complet pentru MongoDB operations
+
 class User(BaseModel):
     id: Optional[str] = None
     username: str
@@ -148,7 +147,6 @@ class User(BaseModel):
     location: Optional[str] = ""
     phone_number: Optional[str] = ""
     profile_image: Optional[str] = ""
-    # ✅ Adăugat câmpurile pentru profilul nou
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     city: Optional[str] = None
@@ -164,8 +162,6 @@ class User(BaseModel):
     class Config:
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
-
-# ✅ Modele adiționale pentru compatibilitate cu codul existent
 class UserRegister(BaseModel):
     """Alias pentru UserRegistration - pentru compatibilitate"""
     username: str
@@ -173,7 +169,6 @@ class UserRegister(BaseModel):
     password: str
 
 class PollStatistics(BaseModel):
-    """Statistici detaliate pentru un sondaj"""
     poll_id: str
     poll_title: str
     total_votes: int
@@ -185,7 +180,7 @@ class PollStatistics(BaseModel):
     engagement_metrics: dict  # Metrici de engagement
 
 class UserVoteStats(BaseModel):
-    """Statistici pentru un utilizator specific"""
+
     user_id: str
     username: str
     first_name: Optional[str] = None
@@ -204,7 +199,7 @@ class DemographicBreakdown(BaseModel):
     percentage: float
     age_groups: dict
     cities: dict
-    gender_distribution: dict  # dacă adaugi gender în profil
+    gender_distribution: dict  
 
 class PollAnalytics(BaseModel):
     """Analiză completă a unui sondaj"""
@@ -212,4 +207,4 @@ class PollAnalytics(BaseModel):
     statistics: PollStatistics
     user_votes: List[UserVoteStats]
     demographic_breakdown: List[DemographicBreakdown]
-    insights: List[str]  # Insights generate automat
+    insights: List[str] 

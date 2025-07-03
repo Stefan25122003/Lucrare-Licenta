@@ -1,14 +1,13 @@
 import axios from 'axios';
 
-// Configurare centralizată axios
 const API = axios.create({
-  baseURL: 'http://localhost:5000', // Fără /api
+  baseURL: 'http://localhost:5000', 
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-// Adăugare interceptor pentru token de autentificare
+
 API.interceptors.request.use(
   config => {
     const token = localStorage.getItem('token');
